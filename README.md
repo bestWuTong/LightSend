@@ -12,7 +12,7 @@
 
 轻传是一款基于 Flutter 开发的跨平台文件传输工具，利用 WebDAV 协议实现文件在不同设备之间的快速传输。无论是在桌面端还是移动端，轻传都能为您提供便捷的文件传输体验。
 
-（软件功能是基于我的个人需求而设计，目前仅支持通过WebDav进行文件传输，如果希望使用基于局域网的文件传输功能，请使用这款更优秀的产品：[LocalSend](https://github.com/localsend/localsend)）
+（软件功能是基于我的个人需求而设计，目前仅支持通过WebDAV进行文件传输，如果希望使用基于局域网的文件传输功能，请使用这款更优秀的产品：[LocalSend](https://github.com/localsend/localsend)）
 
 ## ✨ 功能特点
 
