@@ -1,0 +1,77 @@
+name: lightsend
+description: LightSend - 轻传，跨平台文件传输工具
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+
+  # WebDAV
+  webdav_client: ^1.2.2
+  dio: ^5.7.0
+
+  # Persistence
+  shared_preferences: ^2.4.0
+  path_provider: ^2.1.5
+  file_picker: ^8.3.4
+
+  # Device & Identity
+  uuid: ^4.5.1
+  crypto: ^3.0.7
+  encrypt: ^5.0.3
+
+  # Tray & Window (Windows)
+  tray_manager: ^0.4.0
+  window_manager: ^0.4.3
+
+  # Notifications
+  local_notifier: ^0.1.6
+  flutter_local_notifications: ^18.0.1
+
+  # File opening (cross-platform)
+  open_filex: ^4.5.0
+
+  # URL launcher (cross-platform)
+  url_launcher: ^6.3.1
+
+  # Localization (Material widget strings in system language)
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+
+  # Sharing (Android) — receive_sharing_intent temporarily removed due to Kotlin 2.2 JVM target incompatibility
+  # receive_sharing_intent: ^1.8.1
+  desktop_drop: ^0.7.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  mocktail: ^1.0.4
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/轻传icon.png
+  windows:
+    generate: true
+    image_path: assets/轻传icon.png
+    icon_size: 256
+
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: HarmonyOS_Sans_SC
+      fonts:
+        - asset: assets/fonts/HarmonyOS_Sans_SC_Regular.ttf
+  assets:
+    - assets/
+    - pubspec.yaml
