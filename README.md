@@ -5,17 +5,22 @@
 
 ---
 
+## ✈️ 项目官网
+[lightsend.bestwutong.top](https://lightsend.bestwutong.top/)
+
 ## 📖 项目简介
 
 轻传是一款基于 Flutter 开发的跨平台文件传输工具，利用 WebDAV 协议实现文件在不同设备之间的快速传输。无论是在桌面端还是移动端，轻传都能为您提供便捷的文件传输体验。
 
+（软件功能是基于我的个人需求而设计，目前仅支持通过WebDAV进行文件传输，如果希望使用基于局域网的文件传输功能，请使用这款更优秀的产品：[LocalSend](https://github.com/localsend/localsend)）
+
 ## ✨ 功能特点
 
-- **跨平台支持** - 支持 Windows 和 Android，在不同设备间自由传输
+- **跨平台支持** - 当前支持 Windows 和 Android（因为我只有这两种设备🌚），在不同设备间自由传输
 - **基于 WebDAV** - 使用标准 WebDAV 协议，安全可靠，兼容性强
-- **优雅界面** - 现代化的设计风格，支持自定义主题
+- **优雅界面** - 现代化的设计风格，支持自定义主题颜色
 - **快速分享** - 桌面端支持右键文件选择发送到轻传
-- **拖拽上传** - 支持拖拽文件到应用即可上传
+- **拖拽上传** - 桌面端支持拖拽文件到应用即可上传
 - **多配置管理** - 支持配置多个 WebDAV 服务器配置文件
 
 ## 📱 应用截图
@@ -40,7 +45,7 @@
 - **WebDAV 客户端**: webdav_client + dio
 - **本地存储**: shared_preferences
 - **桌面端支持**: tray_manager, window_manager
-- **构建工具**: CMake (Windows/Linux/macOS), Gradle (Android)
+- **构建工具**: CMake (Windows), Gradle (Android)
 
 ## 🚀 构建指南
 
