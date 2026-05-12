@@ -184,12 +184,12 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
       ));
     }
 
-    final isActive = current.activeProfileId == id;
+    // A new profile always activates; an edit only updates if it's the active one
+    final shouldUpdateWebdav = profileId == null || current.activeProfileId == profileId;
     final updated = current.copyWith(
       profiles: profiles,
       activeProfileId: id,
-      // If editing the active profile, also update the working webdav config
-      webdav: isActive ? cfg : current.webdav,
+      webdav: shouldUpdateWebdav ? cfg : current.webdav,
     );
     state = AsyncValue.data(updated);
     await _ref.read(configRepositoryProvider).saveConfig(updated);
