@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
@@ -11,6 +12,13 @@ class ChecksumUtils {
     final file = File(filePath);
     final stream = file.openRead();
     final digest = await md5.bind(stream).first;
+    return digest.toString();
+  }
+
+  /// Computes the MD5 hex digest of the given [text].
+  static String md5String(String text) {
+    final bytes = utf8.encode(text);
+    final digest = md5.convert(bytes);
     return digest.toString();
   }
 }

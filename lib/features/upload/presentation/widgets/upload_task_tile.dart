@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/upload_task.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../providers/upload_providers.dart';
 
 /// A single upload task row with progress and actions.
@@ -10,9 +11,24 @@ class UploadTaskTile extends ConsumerWidget {
 
   const UploadTaskTile({super.key, required this.task});
 
+  String _truncateText(String text, int maxLength) {
+    if (text.length <= maxLength) return text;
+    return '${text.substring(0, maxLength)}...';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+
+    final isTextTask = task.type == UploadType.text;
+    final displayName = isTextTask 
+        ? '文本消息' 
+        : task.fileName;
+    final subtitle = isTextTask 
+        ? (task.textContent != null 
+            ? _truncateText(task.textContent!, AppConstants.textPreviewMaxLength) 
+            : '')
+        : task.fileSizeFormatted;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -24,24 +40,30 @@ class UploadTaskTile extends ConsumerWidget {
             // File name and actions
             Row(
               children: [
-                _statusIcon(theme),
-                const SizedBox(width: 8),
+                Icon(
+                  isTextTask ? Icons.short_text : _iconForFile(task.fileName),
+                  size: 24,
+                  color: theme.colorScheme.primary.withValues(alpha: 0.7),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        task.fileName,
+                        displayName,
                         style: theme.textTheme.bodyMedium,
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        task.fileSizeFormatted,
+                        subtitle,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -91,6 +113,44 @@ class UploadTaskTile extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  IconData _iconForFile(String name) {
+    final ext = name.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'webp':
+      case 'bmp':
+        return Icons.image_outlined;
+      case 'mp4':
+      case 'mkv':
+      case 'avi':
+      case 'mov':
+        return Icons.videocam_outlined;
+      case 'mp3':
+      case 'wav':
+      case 'flac':
+      case 'aac':
+        return Icons.audio_file_outlined;
+      case 'pdf':
+        return Icons.picture_as_pdf_outlined;
+      case 'zip':
+      case 'rar':
+      case '7z':
+      case 'tar':
+      case 'gz':
+        return Icons.folder_zip_outlined;
+      case 'doc':
+      case 'docx':
+      case 'txt':
+      case 'md':
+        return Icons.description_outlined;
+      default:
+        return Icons.insert_drive_file_outlined;
+    }
   }
 
   Widget _statusIcon(ThemeData theme) {

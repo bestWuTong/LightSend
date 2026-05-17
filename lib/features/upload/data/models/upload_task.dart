@@ -6,10 +6,18 @@ enum UploadStatus {
   failed,
 }
 
-/// Represents a single file upload task.
+/// Upload task type.
+enum UploadType {
+  file,
+  text,
+}
+
+/// Represents a single file or text upload task.
 class UploadTask {
   final String id;
-  final String filePath;
+  final UploadType type;
+  final String? filePath; // for file type
+  final String? textContent; // for text type
   final String fileName;
   final int fileSize;
   final UploadStatus status;
@@ -20,7 +28,9 @@ class UploadTask {
 
   const UploadTask({
     required this.id,
-    required this.filePath,
+    required this.type,
+    this.filePath,
+    this.textContent,
     required this.fileName,
     required this.fileSize,
     this.status = UploadStatus.idle,
@@ -39,7 +49,9 @@ class UploadTask {
 
   UploadTask copyWith({
     String? id,
+    UploadType? type,
     String? filePath,
+    String? textContent,
     String? fileName,
     int? fileSize,
     UploadStatus? status,
@@ -50,7 +62,9 @@ class UploadTask {
   }) {
     return UploadTask(
       id: id ?? this.id,
+      type: type ?? this.type,
       filePath: filePath ?? this.filePath,
+      textContent: textContent ?? this.textContent,
       fileName: fileName ?? this.fileName,
       fileSize: fileSize ?? this.fileSize,
       status: status ?? this.status,

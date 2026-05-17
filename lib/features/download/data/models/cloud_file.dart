@@ -1,3 +1,5 @@
+import '../../../../core/constants/app_constants.dart';
+
 /// Represents a file discovered on the WebDAV shared directory.
 class CloudFile {
   final String name;
@@ -11,6 +13,11 @@ class CloudFile {
     required this.remotePath,
     required this.uploadTime,
   });
+
+  bool get isTextFile {
+    return name.startsWith(AppConstants.textFilePrefix) && 
+           name.endsWith(AppConstants.textFileSuffix);
+  }
 
   String get sizeFormatted {
     if (size < 1024) return '$size B';

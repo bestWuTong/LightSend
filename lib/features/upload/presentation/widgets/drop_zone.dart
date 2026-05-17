@@ -47,7 +47,7 @@ class _DropZoneState extends State<DropZone> {
         ),
         child: Stack(
           children: [
-            widget.child,
+            Center(child: widget.child),
             if (_isDragging)
               Positioned.fill(
                 child: Center(

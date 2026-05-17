@@ -27,6 +27,11 @@ class AppConstants {
   // WebDAV transfer directory on the remote server
   static const String remoteTransferDir = 'LightSend';
 
+  // Text file constants
+  static const String textFileSuffix = '.lightsend.txt';
+  static const String textFilePrefix = 'text_';
+  static const int textPreviewMaxLength = 100;
+
   // Tray
   static const String trayIconAsset = 'assets/tray_icon.ico';
   static const String trayTooltip = '轻传 LightSend';

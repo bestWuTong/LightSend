@@ -10,6 +10,7 @@ import '../../data/models/upload_task.dart';
 import '../providers/upload_providers.dart';
 import '../widgets/drop_zone.dart';
 import '../widgets/upload_task_tile.dart';
+import 'text_input_page.dart';
 
 /// Main upload page. On Windows: drag-drop + file picker. On Android: file picker.
 class UploadPage extends ConsumerStatefulWidget {
@@ -39,6 +40,14 @@ class _UploadPageState extends ConsumerState<UploadPage> {
       pendingUploadPaths.clear();
       ref.read(uploadProvider.notifier).addFiles(paths);
     }
+  }
+
+  void _openTextInputPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => const TextInputPage(),
+      ),
+    );
   }
 
   @override
@@ -150,23 +159,51 @@ class _UploadPageState extends ConsumerState<UploadPage> {
 
     return Padding(
       padding: const EdgeInsets.all(UiConstants.spacingMd),
-      child: isDesktop
-          ? DropZone(
-              onFilesDropped: (paths) =>
-                  ref.read(uploadProvider.notifier).addFiles(paths),
-              child: _buildUploadHint(context, '拖拽文件到此处上传'),
-            )
-          : _buildMobileUploadCard(context),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Toggle button for text input
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              FilledButton.tonalIcon(
+                onPressed: _openTextInputPage,
+                icon: const Icon(Icons.text_fields, size: 18),
+                label: const Text('发送文本'),
+              ),
+              const SizedBox(width: 12),
+              FilledButton.tonalIcon(
+                onPressed: _pickFiles,
+                icon: const Icon(Icons.insert_drive_file_outlined, size: 18),
+                label: const Text('选择文件'),
+              ),
+            ],
+          ),
+          const SizedBox(height: UiConstants.spacingMd),
+          // File drop/select area - full width
+          isDesktop
+              ? DropZone(
+                  onFilesDropped: (paths) =>
+                      ref.read(uploadProvider.notifier).addFiles(paths),
+                  child: _buildUploadHint(context, '拖拽文件到此处上传'),
+                )
+              : _buildMobileUploadCard(context),
+        ],
+      ),
     );
   }
 
   Widget _buildMobileUploadCard(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
+      margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(UiConstants.spacingLg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(
               Icons.share_outlined,
@@ -181,17 +218,6 @@ class _UploadPageState extends ConsumerState<UploadPage> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: UiConstants.spacingMd),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                FilledButton.tonalIcon(
-                  onPressed: _pickFiles,
-                  icon: const Icon(Icons.insert_drive_file_outlined, size: 18),
-                  label: const Text('选择文件'),
-                ),
-              ],
-            ),
           ],
         ),
       ),
@@ -203,6 +229,8 @@ class _UploadPageState extends ConsumerState<UploadPage> {
       padding: const EdgeInsets.all(UiConstants.spacingLg),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(
             Icons.cloud_upload_outlined,
@@ -218,17 +246,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-          ),
-          const SizedBox(height: UiConstants.spacingMd),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              FilledButton.tonalIcon(
-                onPressed: _pickFiles,
-                icon: const Icon(Icons.insert_drive_file_outlined, size: 18),
-                label: const Text('选择文件'),
-              ),
-            ],
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -245,5 +263,4 @@ class _UploadPageState extends ConsumerState<UploadPage> {
       ref.read(uploadProvider.notifier).addFiles(paths);
     }
   }
-
 }

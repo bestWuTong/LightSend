@@ -1,5 +1,6 @@
 import 'dart:io' as io;
 
+import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
@@ -15,6 +16,21 @@ import '../../services/download_service.dart';
 final downloadServiceProvider = Provider<DownloadService>(
   (ref) => DownloadService(),
 );
+
+/// Reads text content and copies to clipboard
+Future<void> copyTextContent(WidgetRef ref, CloudFile file) async {
+  final configAsync = ref.read(configProvider);
+  final config = configAsync.valueOrNull;
+  if (config == null || !config.webdav.isConfigured) return;
+
+  try {
+    final service = ref.read(downloadServiceProvider);
+    final text = await service.readTextContent(config.webdav, file);
+    await Clipboard.setData(ClipboardData(text: text));
+  } catch (_) {
+    // Ignore errors
+  }
+}
 
 // ─── State ────────────────────────────────────────────────────────────────
 

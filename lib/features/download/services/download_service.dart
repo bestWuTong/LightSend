@@ -58,6 +58,13 @@ class DownloadService {
     }
   }
 
+  /// Reads text content from a file on WebDAV.
+  Future<String> readTextContent(WebdavConfig config, CloudFile file) async {
+    final client = _createClient(config);
+    final bytes = await client.read(file.remotePath);
+    return utf8.decode(bytes);
+  }
+
   /// Downloads a file from WebDAV and verifies its MD5 checksum.
   Future<DownloadResult> download({
     required WebdavConfig config,

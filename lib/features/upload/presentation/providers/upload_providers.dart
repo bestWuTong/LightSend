@@ -1,10 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:dio/dio.dart';
 
-import '../../../../features/config/config.dart';
+import '../../../../core/constants/app_constants.dart';
+import '../../../config/config.dart';
 import '../../data/models/upload_task.dart';
 import '../../services/upload_service.dart';
 
@@ -35,6 +37,7 @@ class UploadNotifier extends StateNotifier<List<UploadTask>> {
       final name = path.split(RegExp(r'[/\\]')).last;
       tasks.add(UploadTask(
         id: uuid.v4(),
+        type: UploadType.file,
         filePath: path,
         fileName: name,
         fileSize: size,
@@ -45,6 +48,28 @@ class UploadNotifier extends StateNotifier<List<UploadTask>> {
     if (tasks.isEmpty) return;
 
     state = [...state, ...tasks];
+
+    if (autoStart) {
+      _startNext();
+    }
+  }
+
+  Future<void> addText(String text, {bool autoStart = true}) async {
+    final uuid = const Uuid();
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    final fileName = '${AppConstants.textFilePrefix}$ts${AppConstants.textFileSuffix}';
+    final bytes = utf8.encode(text);
+
+    final task = UploadTask(
+      id: uuid.v4(),
+      type: UploadType.text,
+      textContent: text,
+      fileName: fileName,
+      fileSize: bytes.length,
+      createdAt: DateTime.now(),
+    );
+
+    state = [...state, task];
 
     if (autoStart) {
       _startNext();
@@ -88,15 +113,27 @@ class UploadNotifier extends StateNotifier<List<UploadTask>> {
 
     final service = _ref.read(uploadServiceProvider);
     try {
-      await service.upload(
-        localPath: task.filePath,
-        remoteFileName: task.fileName,
-        config: config.webdav,
-        onProgress: (count, total) {
-          _updateProgress(task.id, count, total);
-        },
-        cancelToken: cancelToken,
-      );
+      if (task.type == UploadType.file) {
+        await service.upload(
+          localPath: task.filePath!,
+          remoteFileName: task.fileName,
+          config: config.webdav,
+          onProgress: (count, total) {
+            _updateProgress(task.id, count, total);
+          },
+          cancelToken: cancelToken,
+        );
+      } else {
+        await service.uploadText(
+          textContent: task.textContent!,
+          remoteFileName: task.fileName,
+          config: config.webdav,
+          onProgress: (count, total) {
+            _updateProgress(task.id, count, total);
+          },
+          cancelToken: cancelToken,
+        );
+      }
 
       if (cancelToken.isCancelled) return;
       _markCompleted(task.id);
