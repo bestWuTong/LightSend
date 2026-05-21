@@ -268,7 +268,6 @@ body {
 
 .hero-screenshot {
     width: 100%;
-    max-width: 400px;
     box-shadow: var(--shadow-lg);
     transform: rotateY(-5deg);
     transition: transform 0.5s ease;
