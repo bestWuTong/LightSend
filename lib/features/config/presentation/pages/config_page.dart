@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/constants/ui_constants.dart';
-import '../../../../features/tray/services/auto_start_service.dart';
 import '../../../upload/services/sendto_service.dart';
 import '../providers/config_providers.dart';
 import '../widgets/about_section.dart';
@@ -21,10 +20,7 @@ class ConfigPage extends ConsumerStatefulWidget {
 }
 
 class _ConfigPageState extends ConsumerState<ConfigPage> {
-  final AutoStartService _autoStartService = AutoStartService();
   final SendtoService _sendtoService = SendtoService();
-  bool _autoStartEnabled = false;
-  bool _autoStartLoaded = false;
   bool _sendToMenuEnabled = false;
   bool _sendToMenuLoaded = false;
 
@@ -32,18 +28,7 @@ class _ConfigPageState extends ConsumerState<ConfigPage> {
   void initState() {
     super.initState();
     if (Platform.isWindows) {
-      _loadAutoStartState();
       _loadSendToMenuState();
-    }
-  }
-
-  Future<void> _loadAutoStartState() async {
-    final enabled = await _autoStartService.isEnabled();
-    if (mounted) {
-      setState(() {
-        _autoStartEnabled = enabled;
-        _autoStartLoaded = true;
-      });
     }
   }
 
@@ -54,29 +39,6 @@ class _ConfigPageState extends ConsumerState<ConfigPage> {
         _sendToMenuEnabled = enabled;
         _sendToMenuLoaded = true;
       });
-    }
-  }
-
-  Future<void> _toggleAutoStart(bool value) async {
-    bool success;
-    if (value) {
-      success = await _autoStartService.enable();
-    } else {
-      success = await _autoStartService.disable();
-    }
-    if (mounted) {
-      setState(() {
-        _autoStartEnabled = success ? value : _autoStartEnabled;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(success
-                ? (value ? '已开启开机自启' : '已关闭开机自启')
-                : '操作失败，请检查系统权限'),
-          ),
-        );
-      }
     }
   }
 
@@ -178,43 +140,9 @@ class _ConfigPageState extends ConsumerState<ConfigPage> {
                 },
               ),
             ),
-            // Window close behavior (Windows only)
-            if (Platform.isWindows)
-              Card(
-                margin: const EdgeInsets.symmetric(
-                  horizontal: UiConstants.spacingMd,
-                  vertical: UiConstants.spacingSm,
-                ),
-                child: SwitchListTile(
-                  title: const Text('关闭窗口时退出程序'),
-                  subtitle: const Text('关闭后彻底退出，不驻留托盘'),
-                  secondary: const Icon(Icons.exit_to_app_outlined),
-                  value: config.exitOnClose,
-                  onChanged: (value) {
-                    ref
-                        .read(configProvider.notifier)
-                        .setExitOnClose(value);
-                  },
-                ),
-              ),
-            // Auto-start toggle (Windows only)
+            // SendTo menu toggle (Windows only)
             if (Platform.isWindows) ...[
               const SizedBox(height: UiConstants.spacingMd),
-              Card(
-                margin: const EdgeInsets.symmetric(
-                  horizontal: UiConstants.spacingMd,
-                  vertical: UiConstants.spacingSm,
-                ),
-                child: SwitchListTile(
-                  title: const Text('开机自启'),
-                  subtitle: const Text('系统启动时自动后台托盘运行'),
-                  secondary:
-                      const Icon(Icons.power_settings_new_outlined),
-                  value: _autoStartEnabled,
-                  onChanged: _autoStartLoaded ? _toggleAutoStart : null,
-                ),
-              ),
-              // SendTo menu toggle (Windows only)
               Card(
                 margin: const EdgeInsets.symmetric(
                   horizontal: UiConstants.spacingMd,

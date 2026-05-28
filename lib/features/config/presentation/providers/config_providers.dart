@@ -128,15 +128,6 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
     await _ref.read(configRepositoryProvider).saveConfig(updated);
   }
 
-  Future<void> setExitOnClose(bool value) async {
-    final current = state.valueOrNull;
-    if (current == null) return;
-
-    final updated = current.copyWith(exitOnClose: value);
-    state = AsyncValue.data(updated);
-    await _ref.read(configRepositoryProvider).saveConfig(updated);
-  }
-
   Future<bool> setSendToMenuEnabled(bool value) async {
     final current = state.valueOrNull;
     if (current == null) return false;

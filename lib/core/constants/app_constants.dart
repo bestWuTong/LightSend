@@ -32,17 +32,6 @@ class AppConstants {
   static const String textFilePrefix = 'text_';
   static const int textPreviewMaxLength = 100;
 
-  // Tray
-  static const String trayIconAsset = 'assets/tray_icon.ico';
-  static const String trayTooltip = '轻传 LightSend';
-  static const String trayMenuKeyShow = 'show';
-  static const String trayMenuKeyExit = 'exit';
-
-  // Auto-start registry
-  static const String autoStartRegKey =
-      r'Software\Microsoft\Windows\CurrentVersion\Run';
-  static const String autoStartValueName = 'LightSend';
-
   // Window defaults
   static const double windowWidth = 480;
   static const double windowHeight = 680;

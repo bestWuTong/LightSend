@@ -1,9 +1,8 @@
-import 'dart:io' show Platform, exit;
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'core/constants/app_constants.dart';
@@ -11,8 +10,6 @@ import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'features/config/presentation/providers/config_providers.dart';
 import 'features/home/home.dart';
-import 'features/tray/services/tray_service.dart';
-import 'features/tray/services/window_service.dart';
 
 class LightSendApp extends ConsumerStatefulWidget {
   const LightSendApp({super.key});
@@ -21,11 +18,7 @@ class LightSendApp extends ConsumerStatefulWidget {
   ConsumerState<LightSendApp> createState() => _LightSendAppState();
 }
 
-class _LightSendAppState extends ConsumerState<LightSendApp>
-    with WindowListener, TrayListener {
-  final WindowService _windowService = WindowService();
-  final TrayService _trayService = TrayService();
-
+class _LightSendAppState extends ConsumerState<LightSendApp> {
   bool get _isDesktop =>
       Platform.isWindows || Platform.isMacOS || Platform.isLinux;
 
@@ -33,59 +26,22 @@ class _LightSendAppState extends ConsumerState<LightSendApp>
   void initState() {
     super.initState();
     if (_isDesktop) {
-      windowManager.addListener(this);
-      trayManager.addListener(this);
-      _initServices();
+      _initWindow();
     }
   }
 
-  Future<void> _initServices() async {
-    await _windowService.init();
-    await _trayService.init();
-  }
-
-  @override
-  void dispose() {
-    if (_isDesktop) {
-      windowManager.removeListener(this);
-      trayManager.removeListener(this);
-    }
-    super.dispose();
-  }
-
-  // ─── WindowListener ──────────────────────────────────────────────────────
-
-  @override
-  void onWindowClose() {
-    final config = ref.read(configProvider).valueOrNull;
-    if (config?.exitOnClose ?? true) {
-      exit(0);
-    } else {
-      _windowService.hide();
-    }
-  }
-
-  // ─── TrayListener ────────────────────────────────────────────────────────
-
-  @override
-  void onTrayIconMouseDown() {
-    _windowService.show();
-  }
-
-  @override
-  void onTrayIconRightMouseDown() {
-    _trayService.popUpContextMenu();
-  }
-
-  @override
-  void onTrayMenuItemClick(MenuItem menuItem) {
-    switch (menuItem.key) {
-      case AppConstants.trayMenuKeyShow:
-        _windowService.show();
-        break;
-      case AppConstants.trayMenuKeyExit:
-        exit(0);
-    }
+  Future<void> _initWindow() async {
+    final options = WindowOptions(
+      size: const Size(AppConstants.windowWidth, AppConstants.windowHeight),
+      minimumSize: const Size(AppConstants.windowWidth, AppConstants.windowHeight),
+      title: AppConstants.appNameCN,
+      center: true,
+      skipTaskbar: false,
+    );
+    await windowManager.waitUntilReadyToShow(options, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
   }
 
   // ─── Build ───────────────────────────────────────────────────────────────

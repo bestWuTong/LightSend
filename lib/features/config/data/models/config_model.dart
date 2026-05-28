@@ -9,7 +9,6 @@ class ConfigModel {
   final WebdavConfig webdav;
   final DownloadPathConfig downloadPath;
   final bool useCustomFont;
-  final bool exitOnClose;
   final bool sendToMenuEnabled;
   final List<WebdavProfile> profiles;
   final String? activeProfileId;
@@ -23,7 +22,6 @@ class ConfigModel {
     required this.webdav,
     required this.downloadPath,
     this.useCustomFont = true,
-    this.exitOnClose = true,
     this.sendToMenuEnabled = false,
     this.profiles = const [],
     this.activeProfileId,
@@ -35,7 +33,6 @@ class ConfigModel {
         webdav: WebdavConfig.empty(),
         downloadPath: DownloadPathConfig.defaultPath(''),
         useCustomFont: true,
-        exitOnClose: true,
         sendToMenuEnabled: false,
         seedColor: defaultSeedColor,
         themeMode: defaultThemeMode,
@@ -45,7 +42,6 @@ class ConfigModel {
     WebdavConfig? webdav,
     DownloadPathConfig? downloadPath,
     bool? useCustomFont,
-    bool? exitOnClose,
     bool? sendToMenuEnabled,
     List<WebdavProfile>? profiles,
     String? activeProfileId,
@@ -57,7 +53,6 @@ class ConfigModel {
       webdav: webdav ?? this.webdav,
       downloadPath: downloadPath ?? this.downloadPath,
       useCustomFont: useCustomFont ?? this.useCustomFont,
-      exitOnClose: exitOnClose ?? this.exitOnClose,
       sendToMenuEnabled: sendToMenuEnabled ?? this.sendToMenuEnabled,
       profiles: profiles ?? this.profiles,
       activeProfileId:
@@ -71,7 +66,6 @@ class ConfigModel {
         'webdav': webdav.toJson(encryptor),
         'downloadPath': downloadPath.toJson(),
         'useCustomFont': useCustomFont,
-        'exitOnClose': exitOnClose,
         'sendToMenuEnabled': sendToMenuEnabled,
         'profiles': profiles.map((p) => p.toJson(encryptor)).toList(),
         'activeProfileId': activeProfileId,
@@ -91,7 +85,6 @@ class ConfigModel {
               json['downloadPath'] as Map<String, dynamic>)
           : DownloadPathConfig.defaultPath(''),
       useCustomFont: json['useCustomFont'] as bool? ?? true,
-      exitOnClose: json['exitOnClose'] as bool? ?? true,
       sendToMenuEnabled: json['sendToMenuEnabled'] as bool? ?? false,
       profiles: (json['profiles'] as List<dynamic>?)
               ?.map((e) =>
