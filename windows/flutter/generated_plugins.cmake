@@ -4,7 +4,6 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   desktop_drop
-  local_notifier
   screen_retriever_windows
   tray_manager
   url_launcher_windows
