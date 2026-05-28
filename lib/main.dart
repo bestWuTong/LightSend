@@ -44,6 +44,11 @@ void main(List<String> args) async {
   // Listen for Android share intents
   _setupShareIntentListener();
 
+  // Listen for forwarded args from second Windows instance
+  if (Platform.isWindows) {
+    _setupWindowsForwardedArgsListener();
+  }
+
   FlutterError.onError = (details) {
     developer.log('FlutterError',
         error: details.exception, stackTrace: details.stack);
@@ -83,6 +88,22 @@ void _setupShareIntentListener() {
         pendingUploadTick.value++;
       }
     }
+  });
+}
+
+void _setupWindowsForwardedArgsListener() {
+  const channel = BasicMessageChannel<String>(
+    'lightsend/windows_forward',
+    StringCodec(),
+  );
+  channel.setMessageHandler((String? message) async {
+    if (message == null || message.isEmpty) return '';
+    final args = message.split('\n');
+    _parseArgs(args);
+    if (pendingUploadPaths.isNotEmpty) {
+      pendingUploadTick.value++;
+    }
+    return '';
   });
 }
 
