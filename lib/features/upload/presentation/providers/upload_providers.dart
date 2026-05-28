@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import 'package:dio/dio.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/utils/cache_cleaner.dart';
 import '../../../config/config.dart';
 import '../../data/models/upload_task.dart';
 import '../../services/upload_service.dart';
@@ -167,6 +169,10 @@ class UploadNotifier extends StateNotifier<List<UploadTask>> {
   }
 
   void _markCompleted(String id) {
+    final task = state.firstWhere((t) => t.id == id);
+    if (task.type == UploadType.file && task.filePath != null) {
+      unawaited(CacheCleaner.deleteIfInCache(task.filePath!));
+    }
     state = state.map((t) {
       if (t.id != id) return t;
       return t.copyWith(

@@ -9,6 +9,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'app.dart';
 import 'core/storage/shared_preferences_storage.dart';
+import 'core/utils/cache_cleaner.dart';
 import 'core/utils/version_helper.dart';
 import 'features/config/presentation/providers/config_providers.dart';
 
@@ -27,6 +28,10 @@ void main(List<String> args) async {
 
   // Load app version from pubspec.yaml (bundled as asset)
   await VersionHelper.init();
+
+  // Clean up orphaned Android share-intent cache files from previous sessions
+  await CacheCleaner.init();
+  await CacheCleaner.clearSharedCache();
 
   // window_manager is desktop-only — skip on Android/iOS
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
