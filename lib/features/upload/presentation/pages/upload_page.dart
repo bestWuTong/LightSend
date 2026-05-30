@@ -40,6 +40,14 @@ class _UploadPageState extends ConsumerState<UploadPage> {
       pendingUploadPaths.clear();
       ref.read(uploadProvider.notifier).addFiles(paths);
     }
+    if (pendingUploadTexts.isNotEmpty) {
+      final texts = List<String>.from(pendingUploadTexts);
+      pendingUploadTexts.clear();
+      final notifier = ref.read(uploadProvider.notifier);
+      for (final text in texts) {
+        notifier.addText(text);
+      }
+    }
   }
 
   void _openTextInputPage() {

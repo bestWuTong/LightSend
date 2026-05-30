@@ -72,17 +72,33 @@ class UploadService {
     }
 
     final remotePath = '${AppConstants.remoteTransferDir}/$finalName';
+    final uploadPath = _temporaryUploadPath(remotePath);
     final totalSize = fileSize;
 
-    // Upload file
-    await client.writeFromFile(
-      localPath,
-      remotePath,
-      onProgress: (count, _) {
-        onProgress?.call(count, totalSize);
-      },
-      cancelToken: cancelToken,
-    );
+    try {
+      await client.writeFromFile(
+        localPath,
+        uploadPath,
+        onProgress: (count, _) {
+          onProgress?.call(count, totalSize);
+        },
+        cancelToken: cancelToken,
+      );
+
+      if (cancelToken?.isCancelled ?? false) {
+        throw Exception('已取消');
+      }
+
+      await client.rename(uploadPath, remotePath, false);
+
+      if (cancelToken?.isCancelled ?? false) {
+        await _deleteRemoteIfExists(config, remotePath);
+        throw Exception('已取消');
+      }
+    } catch (_) {
+      await _deleteRemoteIfExists(config, uploadPath);
+      rethrow;
+    }
 
     return UploadResult(remoteFileName: finalName);
   }
@@ -120,6 +136,7 @@ class UploadService {
     }
 
     final remotePath = '${AppConstants.remoteTransferDir}/$finalName';
+    final uploadPath = _temporaryUploadPath(remotePath);
     final totalSize = fileSize;
 
     // Simulate progress steps for text upload
@@ -129,10 +146,53 @@ class UploadService {
       onProgress?.call((totalSize * i / steps).round(), totalSize);
     }
 
-    // Upload text content
-    await client.write(remotePath, bytes, cancelToken: cancelToken);
+    try {
+      await client.write(uploadPath, bytes, cancelToken: cancelToken);
+
+      if (cancelToken?.isCancelled ?? false) {
+        throw Exception('已取消');
+      }
+
+      await client.rename(uploadPath, remotePath, false);
+
+      if (cancelToken?.isCancelled ?? false) {
+        await _deleteRemoteIfExists(config, remotePath);
+        throw Exception('已取消');
+      }
+    } catch (_) {
+      await _deleteRemoteIfExists(config, uploadPath);
+      rethrow;
+    }
 
     return UploadResult(remoteFileName: finalName);
+  }
+
+  String _temporaryUploadPath(String remotePath) {
+    final ts = DateTime.now().microsecondsSinceEpoch;
+    return '$remotePath.lightsend-uploading-$ts';
+  }
+
+  Future<void> _deleteRemoteIfExists(
+    WebdavConfig config,
+    String remotePath,
+  ) async {
+    const delays = [
+      Duration.zero,
+      Duration(milliseconds: 800),
+      Duration(seconds: 2),
+      Duration(seconds: 5),
+    ];
+
+    for (final delay in delays) {
+      if (delay > Duration.zero) {
+        await Future.delayed(delay);
+      }
+
+      try {
+        final client = _createClient(config);
+        await client.remove(remotePath);
+      } catch (_) {}
+    }
   }
 
   Future<int> getTotalSize(List<String> paths) async {

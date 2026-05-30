@@ -77,12 +77,17 @@ class DownloadService {
     final baseName = file.name;
     final localPath = _resolveLocalPath(localDir, baseName);
 
-    await client.read2File(
-      file.remotePath,
-      localPath,
-      onProgress: (count, total) => onProgress?.call(count, total),
-      cancelToken: cancelToken,
-    );
+    try {
+      await client.read2File(
+        file.remotePath,
+        localPath,
+        onProgress: (count, total) => onProgress?.call(count, total),
+        cancelToken: cancelToken,
+      );
+    } catch (_) {
+      await _deleteLocalIfExists(localPath);
+      rethrow;
+    }
 
     return DownloadResult(localPath: localPath);
   }
@@ -103,5 +108,14 @@ class DownloadService {
     if (!config.isConfigured) return;
     final client = _createClient(config);
     await client.remove(remotePath);
+  }
+
+  Future<void> _deleteLocalIfExists(String localPath) async {
+    try {
+      final file = io.File(localPath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {}
   }
 }

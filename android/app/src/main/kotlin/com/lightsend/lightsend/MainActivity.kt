@@ -18,6 +18,7 @@ class MainActivity : FlutterActivity() {
     private val FILE_CHANNEL = "lightsend/file"
 
     private val pendingSharePaths = mutableListOf<String>()
+    private val pendingShareTexts = mutableListOf<String>()
     private var shareChannel: MethodChannel? = null
     private var dartShareHandlerReady = false
 
@@ -48,7 +49,7 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "consumePendingSharedFiles" -> {
                     dartShareHandlerReady = true
-                    result.success(mapOf("paths" to consumePendingSharePaths()))
+                    result.success(consumePendingSharePayload())
                 }
                 else -> result.notImplemented()
             }
@@ -87,12 +88,17 @@ class MainActivity : FlutterActivity() {
         if (intent == null) return
 
         val paths = mutableListOf<String>()
+        val texts = mutableListOf<String>()
 
         when (intent.action) {
             Intent.ACTION_SEND -> {
                 intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let { uri ->
                     val path = copySharedFileToCache(uri)
                     if (path != null) paths.add(path)
+                }
+                intent.getStringExtra(Intent.EXTRA_TEXT)?.let { text ->
+                    val trimmed = text.trim()
+                    if (trimmed.isNotEmpty()) texts.add(trimmed)
                 }
             }
             Intent.ACTION_SEND_MULTIPLE -> {
@@ -107,19 +113,24 @@ class MainActivity : FlutterActivity() {
 
         if (paths.isNotEmpty()) {
             pendingSharePaths.addAll(paths)
-            notifySharedFilesIfReady()
         }
+        if (texts.isNotEmpty()) {
+            pendingShareTexts.addAll(texts)
+        }
+        notifySharedFilesIfReady()
     }
 
     private fun notifySharedFilesIfReady() {
-        if (!dartShareHandlerReady || pendingSharePaths.isEmpty()) return
-        shareChannel?.invokeMethod("onSharedFiles", mapOf("paths" to consumePendingSharePaths()))
+        if (!dartShareHandlerReady || (pendingSharePaths.isEmpty() && pendingShareTexts.isEmpty())) return
+        shareChannel?.invokeMethod("onSharedFiles", consumePendingSharePayload())
     }
 
-    private fun consumePendingSharePaths(): List<String> {
+    private fun consumePendingSharePayload(): Map<String, List<String>> {
         val paths = pendingSharePaths.toList()
+        val texts = pendingShareTexts.toList()
         pendingSharePaths.clear()
-        return paths
+        pendingShareTexts.clear()
+        return mapOf("paths" to paths, "texts" to texts)
     }
 
     /**

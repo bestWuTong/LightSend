@@ -17,6 +17,9 @@ import 'features/config/presentation/providers/config_providers.dart';
 /// Set before app starts, consumed by UploadPage.
 List<String> pendingUploadPaths = [];
 
+/// Holds text shared from Android before UploadPage consumes it.
+List<String> pendingUploadTexts = [];
+
 /// Notifies UploadPage when new pending files arrive (Android share, etc.).
 final ValueNotifier<int> pendingUploadTick = ValueNotifier<int>(0);
 
@@ -74,6 +77,7 @@ void _setupShareIntentListener() {
   _shareChannel.setMethodCallHandler((call) async {
     if (call.method == 'onSharedFiles') {
       _addSharedPaths((call.arguments as Map?)?['paths']);
+      _addSharedTexts((call.arguments as Map?)?['texts']);
     }
   });
 
@@ -88,6 +92,7 @@ Future<void> _consumePendingSharedFiles() async {
       'consumePendingSharedFiles',
     );
     _addSharedPaths(result?['paths']);
+    _addSharedTexts(result?['texts']);
   } catch (_) {}
 }
 
@@ -97,6 +102,21 @@ void _addSharedPaths(dynamic paths) {
     for (final path in paths) {
       if (path is String && path.isNotEmpty) {
         pendingUploadPaths.add(path);
+        added = true;
+      }
+    }
+  }
+  if (added) {
+    pendingUploadTick.value++;
+  }
+}
+
+void _addSharedTexts(dynamic texts) {
+  var added = false;
+  if (texts is List) {
+    for (final text in texts) {
+      if (text is String && text.trim().isNotEmpty) {
+        pendingUploadTexts.add(text.trim());
         added = true;
       }
     }

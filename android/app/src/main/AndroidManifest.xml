@@ -37,6 +37,12 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="*/*"/>
             </intent-filter>
+            <!-- Receive shared text / links -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
             <!-- Receive shared files (multiple) -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND_MULTIPLE"/>
