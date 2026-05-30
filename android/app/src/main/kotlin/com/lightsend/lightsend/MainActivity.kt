@@ -17,8 +17,9 @@ class MainActivity : FlutterActivity() {
     private val SHARE_CHANNEL = "lightsend/share"
     private val FILE_CHANNEL = "lightsend/file"
 
-    private var pendingSharePaths: MutableList<String>? = null
+    private val pendingSharePaths = mutableListOf<String>()
     private var shareChannel: MethodChannel? = null
+    private var dartShareHandlerReady = false
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -43,12 +44,13 @@ class MainActivity : FlutterActivity() {
             flutterEngine.dartExecutor.binaryMessenger,
             SHARE_CHANNEL
         )
-
-        // Send any pending shared files that were received before Flutter was ready
-        pendingSharePaths?.let { paths ->
-            if (paths.isNotEmpty()) {
-                shareChannel?.invokeMethod("onSharedFiles", mapOf("paths" to paths))
-                pendingSharePaths = null
+        shareChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "consumePendingSharedFiles" -> {
+                    dartShareHandlerReady = true
+                    result.success(mapOf("paths" to consumePendingSharePaths()))
+                }
+                else -> result.notImplemented()
             }
         }
 
@@ -104,12 +106,20 @@ class MainActivity : FlutterActivity() {
         }
 
         if (paths.isNotEmpty()) {
-            shareChannel?.invokeMethod("onSharedFiles", mapOf("paths" to paths))
-                ?: run {
-                    // Flutter engine not ready yet — store for later
-                    pendingSharePaths = paths
-                }
+            pendingSharePaths.addAll(paths)
+            notifySharedFilesIfReady()
         }
+    }
+
+    private fun notifySharedFilesIfReady() {
+        if (!dartShareHandlerReady || pendingSharePaths.isEmpty()) return
+        shareChannel?.invokeMethod("onSharedFiles", mapOf("paths" to consumePendingSharePaths()))
+    }
+
+    private fun consumePendingSharePaths(): List<String> {
+        val paths = pendingSharePaths.toList()
+        pendingSharePaths.clear()
+        return paths
     }
 
     /**

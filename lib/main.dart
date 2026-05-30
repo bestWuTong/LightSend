@@ -31,7 +31,6 @@ void main(List<String> args) async {
 
   // Clean up orphaned Android share-intent cache files from previous sessions
   await CacheCleaner.init();
-  await CacheCleaner.clearSharedCache();
 
   // window_manager is desktop-only — skip on Android/iOS
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
@@ -45,8 +44,11 @@ void main(List<String> args) async {
   _setupShareIntentListener();
 
   FlutterError.onError = (details) {
-    developer.log('FlutterError',
-        error: details.exception, stackTrace: details.stack);
+    developer.log(
+      'FlutterError',
+      error: details.exception,
+      stackTrace: details.stack,
+    );
     FlutterError.presentError(details);
   };
 
@@ -57,9 +59,7 @@ void main(List<String> args) async {
 
     runApp(
       ProviderScope(
-        overrides: [
-          localStorageProvider.overrideWithValue(storage),
-        ],
+        overrides: [localStorageProvider.overrideWithValue(storage)],
         child: const LightSendApp(),
       ),
     );
@@ -73,17 +73,37 @@ void main(List<String> args) async {
 void _setupShareIntentListener() {
   _shareChannel.setMethodCallHandler((call) async {
     if (call.method == 'onSharedFiles') {
-      final List<dynamic>? paths = (call.arguments as Map?)?['paths'];
-      if (paths != null) {
-        for (final path in paths) {
-          if (path is String) {
-            pendingUploadPaths.add(path);
-          }
-        }
-        pendingUploadTick.value++;
-      }
+      _addSharedPaths((call.arguments as Map?)?['paths']);
     }
   });
+
+  if (Platform.isAndroid) {
+    _consumePendingSharedFiles();
+  }
+}
+
+Future<void> _consumePendingSharedFiles() async {
+  try {
+    final result = await _shareChannel.invokeMapMethod<String, dynamic>(
+      'consumePendingSharedFiles',
+    );
+    _addSharedPaths(result?['paths']);
+  } catch (_) {}
+}
+
+void _addSharedPaths(dynamic paths) {
+  var added = false;
+  if (paths is List) {
+    for (final path in paths) {
+      if (path is String && path.isNotEmpty) {
+        pendingUploadPaths.add(path);
+        added = true;
+      }
+    }
+  }
+  if (added) {
+    pendingUploadTick.value++;
+  }
 }
 
 void _parseArgs(List<String> args) {
@@ -119,13 +139,16 @@ class ErrorApp extends StatelessWidget {
               children: [
                 const Icon(Icons.error, size: 64, color: Colors.red),
                 const SizedBox(height: 16),
-                const Text('启动失败',
-                    style:
-                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const Text(
+                  '启动失败',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
-                SelectableText('$error',
-                    style: const TextStyle(fontSize: 13),
-                    textAlign: TextAlign.center),
+                SelectableText(
+                  '$error',
+                  style: const TextStyle(fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
               ],
             ),
           ),
