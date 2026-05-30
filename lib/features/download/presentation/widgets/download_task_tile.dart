@@ -68,10 +68,7 @@ class DownloadTaskTile extends ConsumerWidget {
                     '${(task.progress * 100).toStringAsFixed(0)}%',
                     style: theme.textTheme.labelSmall,
                   ),
-                  Text(
-                    task.speedFormatted,
-                    style: theme.textTheme.labelSmall,
-                  ),
+                  Text(task.speedFormatted, style: theme.textTheme.labelSmall),
                 ],
               ),
             ],
@@ -87,34 +84,6 @@ class DownloadTaskTile extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-            if (task.status == DownloadStatus.completed &&
-                task.md5Verified != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      task.md5Verified!
-                          ? Icons.verified_outlined
-                          : Icons.warning_amber_rounded,
-                      size: 14,
-                      color: task.md5Verified!
-                          ? Colors.green
-                          : Colors.red,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      task.md5Verified! ? 'MD5 校验通过' : 'MD5 校验失败',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: task.md5Verified!
-                            ? Colors.green
-                            : Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
           ],
         ),
       ),
@@ -124,8 +93,11 @@ class DownloadTaskTile extends ConsumerWidget {
   Widget _statusIcon(ThemeData theme) {
     switch (task.status) {
       case DownloadStatus.pending:
-        return Icon(Icons.hourglass_empty,
-            size: 20, color: theme.colorScheme.onSurfaceVariant);
+        return Icon(
+          Icons.hourglass_empty,
+          size: 20,
+          color: theme.colorScheme.onSurfaceVariant,
+        );
       case DownloadStatus.downloading:
         return SizedBox(
           width: 20,
@@ -148,16 +120,13 @@ class DownloadTaskTile extends ConsumerWidget {
         return IconButton(
           icon: const Icon(Icons.close, size: 20),
           tooltip: '取消',
-          onPressed: () =>
-              ref.read(downloadProvider.notifier).remove(task.id),
+          onPressed: () => ref.read(downloadProvider.notifier).remove(task.id),
         );
       case DownloadStatus.failed:
         return IconButton(
-          icon:
-              Icon(Icons.refresh, size: 20, color: theme.colorScheme.primary),
+          icon: Icon(Icons.refresh, size: 20, color: theme.colorScheme.primary),
           tooltip: '重试',
-          onPressed: () =>
-              ref.read(downloadProvider.notifier).retry(task.id),
+          onPressed: () => ref.read(downloadProvider.notifier).retry(task.id),
         );
       case DownloadStatus.completed:
         return Row(
@@ -165,20 +134,30 @@ class DownloadTaskTile extends ConsumerWidget {
           children: [
             if (!Platform.isAndroid)
               IconButton(
-                icon: Icon(Icons.folder_open,
-                    size: 20, color: theme.colorScheme.primary),
+                icon: Icon(
+                  Icons.folder_open,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
                 tooltip: '打开文件夹',
-                onPressed: () => FileOpener.openContainingFolder(task.localPath),
+                onPressed: () =>
+                    FileOpener.openContainingFolder(task.localPath),
               ),
             IconButton(
-              icon: Icon(Icons.open_in_new,
-                  size: 20, color: theme.colorScheme.primary),
+              icon: Icon(
+                Icons.open_in_new,
+                size: 20,
+                color: theme.colorScheme.primary,
+              ),
               tooltip: '打开文件',
               onPressed: () => FileOpener.openFile(task.localPath),
             ),
             IconButton(
-              icon: Icon(Icons.delete_outline,
-                  size: 20, color: theme.colorScheme.onSurfaceVariant),
+              icon: Icon(
+                Icons.delete_outline,
+                size: 20,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               tooltip: '删除记录',
               onPressed: () =>
                   ref.read(downloadProvider.notifier).remove(task.id),

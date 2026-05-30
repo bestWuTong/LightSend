@@ -6,7 +6,6 @@ import 'package:webdav_client/webdav_client.dart' as wc;
 
 import '../../config/data/models/webdav_config.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/utils/checksum_utils.dart';
 
 /// Upload progress callback.
 typedef UploadProgressCallback = void Function(int count, int total);
@@ -14,9 +13,8 @@ typedef UploadProgressCallback = void Function(int count, int total);
 /// Result returned after a successful upload.
 class UploadResult {
   final String remoteFileName;
-  final String md5;
 
-  const UploadResult({required this.remoteFileName, required this.md5});
+  const UploadResult({required this.remoteFileName});
 }
 
 /// Service for uploading files or text to WebDAV shared directory.
@@ -38,8 +36,7 @@ class UploadService {
   }
 
   /// Uploads a local file to the WebDAV server under the shared directory.
-  /// Generates and uploads an MD5 checksum companion file.
-  /// Returns the final remote file name and MD5 hash.
+  /// Returns the final remote file name.
   Future<UploadResult> upload({
     required String localPath,
     required String remoteFileName,
@@ -52,8 +49,6 @@ class UploadService {
       throw Exception('文件不存在: $localPath');
     }
 
-    // Calculate MD5 of the source file
-    final md5 = await ChecksumUtils.md5File(localPath);
     final fileSize = await localFile.length();
 
     final client = _createClient(config, transferSizeBytes: fileSize);
@@ -89,17 +84,11 @@ class UploadService {
       cancelToken: cancelToken,
     );
 
-    // Upload MD5 companion file
-    final md5Path = '$remotePath.md5';
-    final md5Bytes = utf8.encode(md5);
-    await client.write(md5Path, md5Bytes);
-
-    return UploadResult(remoteFileName: finalName, md5: md5);
+    return UploadResult(remoteFileName: finalName);
   }
 
   /// Uploads text content to the WebDAV server under the shared directory.
-  /// Generates and uploads an MD5 checksum companion file.
-  /// Returns the final remote file name and MD5 hash.
+  /// Returns the final remote file name.
   Future<UploadResult> uploadText({
     required String textContent,
     required String remoteFileName,
@@ -107,8 +96,6 @@ class UploadService {
     UploadProgressCallback? onProgress,
     CancelToken? cancelToken,
   }) async {
-    // Calculate MD5 of the text content
-    final md5 = ChecksumUtils.md5String(textContent);
     final bytes = utf8.encode(textContent);
     final fileSize = bytes.length;
 
@@ -145,12 +132,7 @@ class UploadService {
     // Upload text content
     await client.write(remotePath, bytes, cancelToken: cancelToken);
 
-    // Upload MD5 companion file
-    final md5Path = '$remotePath.md5';
-    final md5Bytes = utf8.encode(md5);
-    await client.write(md5Path, md5Bytes);
-
-    return UploadResult(remoteFileName: finalName, md5: md5);
+    return UploadResult(remoteFileName: finalName);
   }
 
   Future<int> getTotalSize(List<String> paths) async {

@@ -208,7 +208,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
       if (cancelToken.isCancelled) return;
 
-      _markCompleted(task.id, result.localPath, result.md5Verified);
+      _markCompleted(task.id, result.localPath);
     } catch (e) {
       if (cancelToken.isCancelled) return;
       _markFailed(task.id, '$e');
@@ -245,7 +245,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     );
   }
 
-  void _markCompleted(String id, String localPath, bool md5Verified) {
+  void _markCompleted(String id, String localPath) {
     state = state.copyWith(
       tasks: state.tasks.map((t) {
         if (t.id != id) return t;
@@ -254,7 +254,6 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
           status: DownloadStatus.completed,
           bytesDownloaded: t.cloudFile.size,
           speed: 0,
-          md5Verified: md5Verified,
         );
       }).toList(),
     );

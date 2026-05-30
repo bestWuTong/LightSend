@@ -12,7 +12,6 @@ class DownloadTask {
   final int bytesDownloaded;
   final double speed;
   final String? error;
-  final bool? md5Verified;
   final DateTime createdAt;
 
   const DownloadTask({
@@ -23,7 +22,6 @@ class DownloadTask {
     this.bytesDownloaded = 0,
     this.speed = 0,
     this.error,
-    this.md5Verified,
     required this.createdAt,
   });
 
@@ -49,7 +47,6 @@ class DownloadTask {
     int? bytesDownloaded,
     double? speed,
     String? error,
-    bool? md5Verified,
     bool clearError = false,
   }) {
     return DownloadTask(
@@ -60,7 +57,6 @@ class DownloadTask {
       bytesDownloaded: bytesDownloaded ?? this.bytesDownloaded,
       speed: speed ?? this.speed,
       error: clearError ? null : (error ?? this.error),
-      md5Verified: md5Verified ?? this.md5Verified,
       createdAt: createdAt,
     );
   }
