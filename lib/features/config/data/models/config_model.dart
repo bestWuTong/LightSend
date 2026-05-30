@@ -8,7 +8,6 @@ import 'download_path_config.dart';
 class ConfigModel {
   final WebdavConfig webdav;
   final DownloadPathConfig downloadPath;
-  final bool useCustomFont;
   final bool sendToMenuEnabled;
   final List<WebdavProfile> profiles;
   final String? activeProfileId;
@@ -21,7 +20,6 @@ class ConfigModel {
   const ConfigModel({
     required this.webdav,
     required this.downloadPath,
-    this.useCustomFont = true,
     this.sendToMenuEnabled = false,
     this.profiles = const [],
     this.activeProfileId,
@@ -30,18 +28,16 @@ class ConfigModel {
   });
 
   factory ConfigModel.defaults() => ConfigModel(
-        webdav: WebdavConfig.empty(),
-        downloadPath: DownloadPathConfig.defaultPath(''),
-        useCustomFont: true,
-        sendToMenuEnabled: false,
-        seedColor: defaultSeedColor,
-        themeMode: defaultThemeMode,
-      );
+    webdav: WebdavConfig.empty(),
+    downloadPath: DownloadPathConfig.defaultPath(''),
+    sendToMenuEnabled: false,
+    seedColor: defaultSeedColor,
+    themeMode: defaultThemeMode,
+  );
 
   ConfigModel copyWith({
     WebdavConfig? webdav,
     DownloadPathConfig? downloadPath,
-    bool? useCustomFont,
     bool? sendToMenuEnabled,
     List<WebdavProfile>? profiles,
     String? activeProfileId,
@@ -52,43 +48,51 @@ class ConfigModel {
     return ConfigModel(
       webdav: webdav ?? this.webdav,
       downloadPath: downloadPath ?? this.downloadPath,
-      useCustomFont: useCustomFont ?? this.useCustomFont,
       sendToMenuEnabled: sendToMenuEnabled ?? this.sendToMenuEnabled,
       profiles: profiles ?? this.profiles,
-      activeProfileId:
-          clearActiveProfile ? null : (activeProfileId ?? this.activeProfileId),
+      activeProfileId: clearActiveProfile
+          ? null
+          : (activeProfileId ?? this.activeProfileId),
       seedColor: seedColor ?? this.seedColor,
       themeMode: themeMode ?? this.themeMode,
     );
   }
 
   Map<String, dynamic> toJson(ConfigEncryptor encryptor) => {
-        'webdav': webdav.toJson(encryptor),
-        'downloadPath': downloadPath.toJson(),
-        'useCustomFont': useCustomFont,
-        'sendToMenuEnabled': sendToMenuEnabled,
-        'profiles': profiles.map((p) => p.toJson(encryptor)).toList(),
-        'activeProfileId': activeProfileId,
-        'seedColor': seedColor,
-        'themeMode': themeMode,
-      };
+    'webdav': webdav.toJson(encryptor),
+    'downloadPath': downloadPath.toJson(),
+    'sendToMenuEnabled': sendToMenuEnabled,
+    'profiles': profiles.map((p) => p.toJson(encryptor)).toList(),
+    'activeProfileId': activeProfileId,
+    'seedColor': seedColor,
+    'themeMode': themeMode,
+  };
 
   factory ConfigModel.fromJson(
-      Map<String, dynamic> json, ConfigEncryptor encryptor) {
+    Map<String, dynamic> json,
+    ConfigEncryptor encryptor,
+  ) {
     return ConfigModel(
       webdav: json['webdav'] != null
           ? WebdavConfig.fromJson(
-              json['webdav'] as Map<String, dynamic>, encryptor)
+              json['webdav'] as Map<String, dynamic>,
+              encryptor,
+            )
           : WebdavConfig.empty(),
       downloadPath: json['downloadPath'] != null
           ? DownloadPathConfig.fromJson(
-              json['downloadPath'] as Map<String, dynamic>)
+              json['downloadPath'] as Map<String, dynamic>,
+            )
           : DownloadPathConfig.defaultPath(''),
-      useCustomFont: json['useCustomFont'] as bool? ?? true,
       sendToMenuEnabled: json['sendToMenuEnabled'] as bool? ?? false,
-      profiles: (json['profiles'] as List<dynamic>?)
-              ?.map((e) =>
-                  WebdavProfile.fromJson(e as Map<String, dynamic>, encryptor))
+      profiles:
+          (json['profiles'] as List<dynamic>?)
+              ?.map(
+                (e) => WebdavProfile.fromJson(
+                  e as Map<String, dynamic>,
+                  encryptor,
+                ),
+              )
               .toList() ??
           [],
       activeProfileId: json['activeProfileId'] as String?,

@@ -6,20 +6,19 @@ import 'app_colors.dart';
 class AppTheme {
   AppTheme._();
 
-  static ThemeData light({String? fontFamily, Color seedColor = AppColors.defaultSeed}) {
+  static ThemeData light({Color seedColor = AppColors.defaultSeed}) {
     final colorScheme = AppColors.lightScheme(seedColor: seedColor);
-    return _buildTheme(colorScheme, Brightness.light, fontFamily);
+    return _buildTheme(colorScheme, Brightness.light);
   }
 
-  static ThemeData dark({String? fontFamily, Color seedColor = AppColors.defaultSeed}) {
+  static ThemeData dark({Color seedColor = AppColors.defaultSeed}) {
     final colorScheme = AppColors.darkScheme(seedColor: seedColor);
-    return _buildTheme(colorScheme, Brightness.dark, fontFamily);
+    return _buildTheme(colorScheme, Brightness.dark);
   }
 
-  static ThemeData _buildTheme(ColorScheme colorScheme, Brightness brightness, String? fontFamily) {
+  static ThemeData _buildTheme(ColorScheme colorScheme, Brightness brightness) {
     return ThemeData(
       useMaterial3: true,
-      fontFamily: fontFamily,
       colorScheme: colorScheme,
       brightness: brightness,
       appBarTheme: AppBarTheme(
@@ -32,12 +31,17 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.4)),
+          side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(

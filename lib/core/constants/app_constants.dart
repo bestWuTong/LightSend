@@ -15,10 +15,6 @@ class AppConstants {
 
   // Storage keys for SharedPreferences
   static const String storageKeyConfig = 'lightsend_config_v1';
-  static const String storageKeyUseCustomFont = 'lightsend_use_custom_font';
-
-  // Custom font
-  static const String customFontFamily = 'HarmonyOS_Sans_SC';
 
   // WebDAV
   static const int webdavConnectTimeoutMs = 10000;

@@ -33,7 +33,10 @@ class _LightSendAppState extends ConsumerState<LightSendApp> {
   Future<void> _initWindow() async {
     final options = WindowOptions(
       size: const Size(AppConstants.windowWidth, AppConstants.windowHeight),
-      minimumSize: const Size(AppConstants.windowWidth, AppConstants.windowHeight),
+      minimumSize: const Size(
+        AppConstants.windowWidth,
+        AppConstants.windowHeight,
+      ),
       title: AppConstants.appNameCN,
       center: true,
       skipTaskbar: false,
@@ -49,26 +52,23 @@ class _LightSendAppState extends ConsumerState<LightSendApp> {
   @override
   Widget build(BuildContext context) {
     final config = ref.watch(configProvider).valueOrNull;
-    final fontFamily =
-        (config?.useCustomFont ?? true) ? AppConstants.customFontFamily : null;
-    final seedColor = Color(config?.seedColor ?? AppColors.defaultSeed.toARGB32());
+    final seedColor = Color(
+      config?.seedColor ?? AppColors.defaultSeed.toARGB32(),
+    );
     final themeMode = _parseThemeMode(config?.themeMode);
 
     return MaterialApp(
       title: AppConstants.appNameCN,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(fontFamily: fontFamily, seedColor: seedColor),
-      darkTheme: AppTheme.dark(fontFamily: fontFamily, seedColor: seedColor),
+      theme: AppTheme.light(seedColor: seedColor),
+      darkTheme: AppTheme.dark(seedColor: seedColor),
       themeMode: themeMode,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('zh', 'CN'),
-        Locale('en', 'US'),
-      ],
+      supportedLocales: const [Locale('zh', 'CN'), Locale('en', 'US')],
       home: const HomePage(),
     );
   }

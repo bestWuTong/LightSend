@@ -62,7 +62,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           NavigationDestination(
             icon: Icon(Icons.cloud_upload_outlined),
             selectedIcon: Icon(Icons.cloud_upload),
-            label: '传输',
+            label: '上传',
           ),
           NavigationDestination(
             icon: Icon(Icons.cloud_download_outlined),

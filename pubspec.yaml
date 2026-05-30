@@ -1,7 +1,7 @@
 name: lightsend
 description: LightSend - 轻传，跨平台文件传输工具
 publish_to: 'none'
-version: 1.1.2+5
+version: 1.2.0+5
 
 environment:
   sdk: ^3.11.5
@@ -65,10 +65,6 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
-  fonts:
-    - family: HarmonyOS_Sans_SC
-      fonts:
-        - asset: assets/fonts/HarmonyOS_Sans_SC_Regular.ttf
   assets:
     - assets/
     - pubspec.yaml

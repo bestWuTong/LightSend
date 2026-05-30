@@ -53,9 +53,11 @@ class _ConfigPageState extends ConsumerState<ConfigPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success
-                ? (value ? '已添加到"发送到"菜单' : '已从"发送到"菜单移除')
-                : '操作失败，请检查系统权限'),
+            content: Text(
+              success
+                  ? (value ? '已添加到"发送到"菜单' : '已从"发送到"菜单移除')
+                  : '操作失败，请检查系统权限',
+            ),
           ),
         );
       }
@@ -67,28 +69,22 @@ class _ConfigPageState extends ConsumerState<ConfigPage> {
     final configAsync = ref.watch(configProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('轻传 LightSend'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('设置'), centerTitle: true),
       body: configAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
           child: Padding(
             padding: const EdgeInsets.all(UiConstants.spacingLg),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.error_outline,
-                    size: 48,
-                    color: Theme.of(context).colorScheme.error),
-                const SizedBox(height: UiConstants.spacingMd),
-                Text(
-                  '配置加载失败',
-                  style: Theme.of(context).textTheme.titleMedium,
+                Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.error,
                 ),
+                const SizedBox(height: UiConstants.spacingMd),
+                Text('配置加载失败', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: UiConstants.spacingSm),
                 Text(
                   '$error',
@@ -97,8 +93,7 @@ class _ConfigPageState extends ConsumerState<ConfigPage> {
                 ),
                 const SizedBox(height: UiConstants.spacingLg),
                 FilledButton.icon(
-                  onPressed: () =>
-                      ref.read(configProvider.notifier).reload(),
+                  onPressed: () => ref.read(configProvider.notifier).reload(),
                   icon: const Icon(Icons.refresh),
                   label: const Text('重试'),
                 ),
@@ -107,39 +102,11 @@ class _ConfigPageState extends ConsumerState<ConfigPage> {
           ),
         ),
         data: (config) => ListView(
-          padding: const EdgeInsets.symmetric(
-            vertical: UiConstants.spacingMd,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: UiConstants.spacingMd),
           children: [
             const WebdavProfileList(),
             const DownloadPathSection(),
             const ThemeSection(),
-            const SizedBox(height: UiConstants.spacingMd),
-            // Custom font toggle
-            Card(
-              margin: const EdgeInsets.symmetric(
-                horizontal: UiConstants.spacingMd,
-                vertical: UiConstants.spacingSm,
-              ),
-              child: SwitchListTile(
-                title: const Text('使用 HarmonyOS Sans 字体'),
-                subtitle: const Text('关闭后重启应用恢复系统默认字体'),
-                secondary: const Icon(Icons.font_download_outlined),
-                value: config.useCustomFont,
-                onChanged: (value) {
-                  ref
-                      .read(configProvider.notifier)
-                      .setUseCustomFont(value);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('字体设置将在下次启动时生效'),
-                      ),
-                    );
-                  }
-                },
-              ),
-            ),
             // SendTo menu toggle (Windows only)
             if (Platform.isWindows) ...[
               const SizedBox(height: UiConstants.spacingMd),
@@ -151,8 +118,7 @@ class _ConfigPageState extends ConsumerState<ConfigPage> {
                 child: SwitchListTile(
                   title: const Text('添加到"发送到"菜单'),
                   subtitle: const Text('右键文件→发送到→轻传，快速发送文件'),
-                  secondary:
-                      const Icon(Icons.send_outlined),
+                  secondary: const Icon(Icons.send_outlined),
                   value: _sendToMenuEnabled,
                   onChanged: _sendToMenuLoaded ? _toggleSendToMenu : null,
                 ),
