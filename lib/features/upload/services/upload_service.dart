@@ -21,6 +21,22 @@ class UploadResult {
 
 /// Service for uploading files or text to WebDAV shared directory.
 class UploadService {
+  wc.Client _createClient(WebdavConfig config, {int? transferSizeBytes}) {
+    final client = wc.newClient(
+      config.url,
+      user: config.account,
+      password: config.password,
+      debug: false,
+    );
+    client.setConnectTimeout(AppConstants.webdavConnectTimeoutMs);
+    final timeout = transferSizeBytes == null
+        ? AppConstants.webdavReceiveTimeoutMs
+        : AppConstants.webdavTransferTimeoutMsForBytes(transferSizeBytes);
+    client.setSendTimeout(timeout);
+    client.setReceiveTimeout(timeout);
+    return client;
+  }
+
   /// Uploads a local file to the WebDAV server under the shared directory.
   /// Generates and uploads an MD5 checksum companion file.
   /// Returns the final remote file name and MD5 hash.
@@ -40,15 +56,7 @@ class UploadService {
     final md5 = await ChecksumUtils.md5File(localPath);
     final fileSize = await localFile.length();
 
-    final client = wc.newClient(
-      config.url,
-      user: config.account,
-      password: config.password,
-      debug: false,
-    );
-
-    client.setConnectTimeout(AppConstants.webdavConnectTimeoutMs);
-    client.setReceiveTimeout(AppConstants.webdavReceiveTimeoutMs);
+    final client = _createClient(config, transferSizeBytes: fileSize);
 
     await client.mkdirAll(AppConstants.remoteTransferDir);
 
@@ -57,10 +65,10 @@ class UploadService {
     try {
       // Try to read props — if it succeeds, file exists, add timestamp
       await client.readProps(
-          '${AppConstants.remoteTransferDir}/$remoteFileName');
+        '${AppConstants.remoteTransferDir}/$remoteFileName',
+      );
       final dot = remoteFileName.lastIndexOf('.');
-      final name =
-          dot > 0 ? remoteFileName.substring(0, dot) : remoteFileName;
+      final name = dot > 0 ? remoteFileName.substring(0, dot) : remoteFileName;
       final ext = dot > 0 ? remoteFileName.substring(dot) : '';
       final ts = DateTime.now().millisecondsSinceEpoch;
       finalName = '${name}_$ts$ext';
@@ -104,15 +112,7 @@ class UploadService {
     final bytes = utf8.encode(textContent);
     final fileSize = bytes.length;
 
-    final client = wc.newClient(
-      config.url,
-      user: config.account,
-      password: config.password,
-      debug: false,
-    );
-
-    client.setConnectTimeout(AppConstants.webdavConnectTimeoutMs);
-    client.setReceiveTimeout(AppConstants.webdavReceiveTimeoutMs);
+    final client = _createClient(config, transferSizeBytes: fileSize);
 
     await client.mkdirAll(AppConstants.remoteTransferDir);
 
@@ -121,10 +121,10 @@ class UploadService {
     try {
       // Try to read props — if it succeeds, file exists, add timestamp
       await client.readProps(
-          '${AppConstants.remoteTransferDir}/$remoteFileName');
+        '${AppConstants.remoteTransferDir}/$remoteFileName',
+      );
       final dot = remoteFileName.lastIndexOf('.');
-      final name =
-          dot > 0 ? remoteFileName.substring(0, dot) : remoteFileName;
+      final name = dot > 0 ? remoteFileName.substring(0, dot) : remoteFileName;
       final ext = dot > 0 ? remoteFileName.substring(dot) : '';
       final ts = DateTime.now().millisecondsSinceEpoch;
       finalName = '${name}_$ts$ext';

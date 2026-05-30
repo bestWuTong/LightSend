@@ -43,18 +43,18 @@ class _UploadPageState extends ConsumerState<UploadPage> {
   }
 
   void _openTextInputPage() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (ctx) => const TextInputPage(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (ctx) => const TextInputPage()));
   }
 
   @override
   Widget build(BuildContext context) {
     final tasks = ref.watch(uploadProvider);
     final hasActive = tasks.any(
-        (t) => t.status == UploadStatus.idle || t.status == UploadStatus.uploading);
+      (t) =>
+          t.status == UploadStatus.idle || t.status == UploadStatus.uploading,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -65,7 +65,8 @@ class _UploadPageState extends ConsumerState<UploadPage> {
             IconButton(
               icon: const Icon(Icons.clear_all_outlined),
               tooltip: '清空已完成',
-              onPressed: () => ref.read(uploadProvider.notifier).clearCompleted(),
+              onPressed: () =>
+                  ref.read(uploadProvider.notifier).clearCompleted(),
             ),
         ],
       ),
@@ -82,21 +83,18 @@ class _UploadPageState extends ConsumerState<UploadPage> {
                         Icon(
                           Icons.inbox_outlined,
                           size: 48,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant
-                              .withValues(alpha: 0.4),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                         ),
                         const SizedBox(height: UiConstants.spacingSm),
                         Text(
                           '暂无传输任务',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
+                          style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                         ),
                       ],
@@ -119,9 +117,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
                 horizontal: UiConstants.spacingMd,
                 vertical: UiConstants.spacingSm,
               ),
-              color: Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerHighest,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               child: Row(
                 children: [
                   const SizedBox(
@@ -155,7 +151,8 @@ class _UploadPageState extends ConsumerState<UploadPage> {
   }
 
   Widget _buildUploadArea(BuildContext context) {
-    final isDesktop = Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+    final isDesktop =
+        Platform.isWindows || Platform.isMacOS || Platform.isLinux;
 
     return Padding(
       padding: const EdgeInsets.all(UiConstants.spacingMd),
@@ -235,17 +232,14 @@ class _UploadPageState extends ConsumerState<UploadPage> {
           Icon(
             Icons.cloud_upload_outlined,
             size: 40,
-            color: Theme.of(context)
-                .colorScheme
-                .primary
-                .withValues(alpha: 0.6),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
           ),
           const SizedBox(height: UiConstants.spacingSm),
           Text(
             text,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -259,8 +253,13 @@ class _UploadPageState extends ConsumerState<UploadPage> {
       dialogTitle: '选择要上传的文件',
     );
     if (result != null && result.files.isNotEmpty) {
-      final paths = result.files.map((f) => f.path!).toList();
-      ref.read(uploadProvider.notifier).addFiles(paths);
+      final paths = result.files
+          .map((f) => f.path)
+          .whereType<String>()
+          .toList();
+      if (paths.isNotEmpty) {
+        ref.read(uploadProvider.notifier).addFiles(paths);
+      }
     }
   }
 }

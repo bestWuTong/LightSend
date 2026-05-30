@@ -21,13 +21,14 @@ class UploadTaskTile extends ConsumerWidget {
     final theme = Theme.of(context);
 
     final isTextTask = task.type == UploadType.text;
-    final displayName = isTextTask 
-        ? '文本消息' 
-        : task.fileName;
-    final subtitle = isTextTask 
-        ? (task.textContent != null 
-            ? _truncateText(task.textContent!, AppConstants.textPreviewMaxLength) 
-            : '')
+    final displayName = isTextTask ? '文本消息' : task.fileName;
+    final subtitle = isTextTask
+        ? (task.textContent != null
+              ? _truncateText(
+                  task.textContent!,
+                  AppConstants.textPreviewMaxLength,
+                )
+              : '')
         : task.fileSizeFormatted;
 
     return Card(
@@ -89,10 +90,7 @@ class UploadTaskTile extends ConsumerWidget {
                     '${(task.progress * 100).toStringAsFixed(0)}%',
                     style: theme.textTheme.labelSmall,
                   ),
-                  Text(
-                    task.speedFormatted,
-                    style: theme.textTheme.labelSmall,
-                  ),
+                  Text(task.speedFormatted, style: theme.textTheme.labelSmall),
                 ],
               ),
             ],
@@ -153,50 +151,29 @@ class UploadTaskTile extends ConsumerWidget {
     }
   }
 
-  Widget _statusIcon(ThemeData theme) {
-    switch (task.status) {
-      case UploadStatus.idle:
-        return Icon(Icons.hourglass_empty,
-            size: 20, color: theme.colorScheme.onSurfaceVariant);
-      case UploadStatus.uploading:
-        return SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            value: task.progress > 0 ? task.progress : null,
-          ),
-        );
-      case UploadStatus.completed:
-        return const Icon(Icons.check_circle, size: 20, color: Colors.green);
-      case UploadStatus.failed:
-        return const Icon(Icons.error, size: 20, color: Colors.red);
-    }
-  }
-
   Widget _actionButton(WidgetRef ref, ThemeData theme) {
     switch (task.status) {
       case UploadStatus.uploading:
         return IconButton(
           icon: const Icon(Icons.close, size: 20),
           tooltip: '取消',
-          onPressed: () =>
-              ref.read(uploadProvider.notifier).remove(task.id),
+          onPressed: () => ref.read(uploadProvider.notifier).remove(task.id),
         );
       case UploadStatus.failed:
         return IconButton(
           icon: Icon(Icons.refresh, size: 20, color: theme.colorScheme.primary),
           tooltip: '重试',
-          onPressed: () =>
-              ref.read(uploadProvider.notifier).retry(task.id),
+          onPressed: () => ref.read(uploadProvider.notifier).retry(task.id),
         );
       case UploadStatus.completed:
         return IconButton(
-          icon: Icon(Icons.delete_outline,
-              size: 20, color: theme.colorScheme.onSurfaceVariant),
+          icon: Icon(
+            Icons.delete_outline,
+            size: 20,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
           tooltip: '删除记录',
-          onPressed: () =>
-              ref.read(uploadProvider.notifier).remove(task.id),
+          onPressed: () => ref.read(uploadProvider.notifier).remove(task.id),
         );
       case UploadStatus.idle:
         return const SizedBox.shrink();

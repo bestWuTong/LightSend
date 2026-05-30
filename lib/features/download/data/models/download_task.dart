@@ -44,6 +44,7 @@ class DownloadTask {
   }
 
   DownloadTask copyWith({
+    String? localPath,
     DownloadStatus? status,
     int? bytesDownloaded,
     double? speed,
@@ -54,7 +55,7 @@ class DownloadTask {
     return DownloadTask(
       id: id,
       cloudFile: cloudFile,
-      localPath: localPath,
+      localPath: localPath ?? this.localPath,
       status: status ?? this.status,
       bytesDownloaded: bytesDownloaded ?? this.bytesDownloaded,
       speed: speed ?? this.speed,

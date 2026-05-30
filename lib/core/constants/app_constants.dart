@@ -23,6 +23,22 @@ class AppConstants {
   // WebDAV
   static const int webdavConnectTimeoutMs = 10000;
   static const int webdavReceiveTimeoutMs = 15000;
+  static const int webdavTransferMinTimeoutMs = 60000;
+  static const int webdavTransferTimeoutMsPerMb = 1000;
+  static const int webdavTransferMaxTimeoutMs = 30 * 60 * 1000;
+
+  static int webdavTransferTimeoutMsForBytes(int bytes) {
+    final megabytes = (bytes / (1024 * 1024)).ceil();
+    final timeout =
+        webdavTransferMinTimeoutMs + megabytes * webdavTransferTimeoutMsPerMb;
+    if (timeout > webdavTransferMaxTimeoutMs) {
+      return webdavTransferMaxTimeoutMs;
+    }
+    if (timeout < webdavTransferMinTimeoutMs) {
+      return webdavTransferMinTimeoutMs;
+    }
+    return timeout;
+  }
 
   // WebDAV transfer directory on the remote server
   static const String remoteTransferDir = 'LightSend';

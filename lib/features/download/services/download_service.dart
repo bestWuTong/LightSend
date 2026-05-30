@@ -18,7 +18,7 @@ class DownloadResult {
 
 /// Lists and downloads files from WebDAV shared directory.
 class DownloadService {
-  wc.Client _createClient(WebdavConfig config) {
+  wc.Client _createClient(WebdavConfig config, {int? transferSizeBytes}) {
     final client = wc.newClient(
       config.url,
       user: config.account,
@@ -26,7 +26,11 @@ class DownloadService {
       debug: false,
     );
     client.setConnectTimeout(AppConstants.webdavConnectTimeoutMs);
-    client.setReceiveTimeout(AppConstants.webdavReceiveTimeoutMs);
+    client.setReceiveTimeout(
+      transferSizeBytes == null
+          ? AppConstants.webdavReceiveTimeoutMs
+          : AppConstants.webdavTransferTimeoutMsForBytes(transferSizeBytes),
+    );
     return client;
   }
 
@@ -34,33 +38,30 @@ class DownloadService {
   Future<List<CloudFile>> listCloudFiles(WebdavConfig config) async {
     if (!config.isConfigured) return [];
 
-    try {
-      final client = _createClient(config);
-      final entries =
-          await client.readDir(AppConstants.remoteTransferDir);
+    final client = _createClient(config);
+    await client.mkdirAll(AppConstants.remoteTransferDir);
+    final entries = await client.readDir(AppConstants.remoteTransferDir);
 
-      final files = entries
-          .where((e) =>
-              !(e.isDir ?? false) && !(e.name ?? '').endsWith('.md5'))
-          .map((e) => CloudFile(
-                name: e.name ?? '',
-                size: e.size ?? 0,
-                remotePath: e.path ?? (e.name ?? ''),
-                uploadTime: e.mTime ?? DateTime.now(),
-              ))
-          .where((f) => f.name.isNotEmpty)
-          .toList();
+    final files = entries
+        .where((e) => !(e.isDir ?? false) && !(e.name ?? '').endsWith('.md5'))
+        .map(
+          (e) => CloudFile(
+            name: e.name ?? '',
+            size: e.size ?? 0,
+            remotePath: e.path ?? (e.name ?? ''),
+            uploadTime: e.mTime ?? DateTime.now(),
+          ),
+        )
+        .where((f) => f.name.isNotEmpty)
+        .toList();
 
-      files.sort((a, b) => b.uploadTime.compareTo(a.uploadTime));
-      return files;
-    } catch (_) {
-      return [];
-    }
+    files.sort((a, b) => b.uploadTime.compareTo(a.uploadTime));
+    return files;
   }
 
   /// Reads text content from a file on WebDAV.
   Future<String> readTextContent(WebdavConfig config, CloudFile file) async {
-    final client = _createClient(config);
+    final client = _createClient(config, transferSizeBytes: file.size);
     final bytes = await client.read(file.remotePath);
     return utf8.decode(bytes);
   }
@@ -73,7 +74,7 @@ class DownloadService {
     void Function(int count, int total)? onProgress,
     dynamic cancelToken,
   }) async {
-    final client = _createClient(config);
+    final client = _createClient(config, transferSizeBytes: file.size);
 
     final baseName = file.name;
     final localPath = _resolveLocalPath(localDir, baseName);
@@ -112,8 +113,7 @@ class DownloadService {
   }
 
   /// Deletes a file from the WebDAV server.
-  Future<void> deleteCloudFile(
-      WebdavConfig config, String remotePath) async {
+  Future<void> deleteCloudFile(WebdavConfig config, String remotePath) async {
     if (!config.isConfigured) return;
     final client = _createClient(config);
     await client.remove(remotePath);

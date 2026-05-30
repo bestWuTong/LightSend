@@ -37,14 +37,16 @@ class UploadNotifier extends StateNotifier<List<UploadTask>> {
 
       final size = await file.length();
       final name = path.split(RegExp(r'[/\\]')).last;
-      tasks.add(UploadTask(
-        id: uuid.v4(),
-        type: UploadType.file,
-        filePath: path,
-        fileName: name,
-        fileSize: size,
-        createdAt: DateTime.now(),
-      ));
+      tasks.add(
+        UploadTask(
+          id: uuid.v4(),
+          type: UploadType.file,
+          filePath: path,
+          fileName: name,
+          fileSize: size,
+          createdAt: DateTime.now(),
+        ),
+      );
     }
 
     if (tasks.isEmpty) return;
@@ -59,7 +61,8 @@ class UploadNotifier extends StateNotifier<List<UploadTask>> {
   Future<void> addText(String text, {bool autoStart = true}) async {
     final uuid = const Uuid();
     final ts = DateTime.now().millisecondsSinceEpoch;
-    final fileName = '${AppConstants.textFilePrefix}$ts${AppConstants.textFileSuffix}';
+    final fileName =
+        '${AppConstants.textFilePrefix}$ts${AppConstants.textFileSuffix}';
     final bytes = utf8.encode(text);
 
     final task = UploadTask(
@@ -150,15 +153,16 @@ class UploadNotifier extends StateNotifier<List<UploadTask>> {
   }
 
   void _updateStatus(String id, UploadStatus status) {
-    state = state.map((t) => t.id == id ? t.copyWith(status: status) : t).toList();
+    state = state
+        .map((t) => t.id == id ? t.copyWith(status: status) : t)
+        .toList();
   }
 
   void _updateProgress(String id, int bytesUploaded, int total) {
     final now = DateTime.now();
     state = state.map((t) {
       if (t.id != id) return t;
-      final elapsed =
-          now.difference(t.createdAt).inMilliseconds / 1000;
+      final elapsed = now.difference(t.createdAt).inMilliseconds / 1000;
       final speed = elapsed > 0 ? (bytesUploaded / elapsed).toDouble() : 0.0;
       return t.copyWith(
         status: UploadStatus.uploading,
@@ -186,18 +190,24 @@ class UploadNotifier extends StateNotifier<List<UploadTask>> {
   void _markFailed(String id, String error) {
     state = state.map((t) {
       if (t.id != id) return t;
-      return t.copyWith(
-        status: UploadStatus.failed,
-        error: error,
-        speed: 0,
-      );
+      return t.copyWith(status: UploadStatus.failed, error: error, speed: 0);
     }).toList();
   }
 
   void cancelCurrent() {
-    _currentCancelToken?.cancel();
-    _currentCancelToken = null;
-    _isUploading = false;
+    UploadTask? activeTask;
+    for (final task in state) {
+      if (task.status == UploadStatus.uploading) {
+        activeTask = task;
+        break;
+      }
+    }
+
+    _currentCancelToken?.cancel('已取消');
+
+    if (activeTask != null) {
+      _markFailed(activeTask.id, '已取消');
+    }
   }
 
   Future<void> retry(String id) async {
@@ -227,9 +237,11 @@ class UploadNotifier extends StateNotifier<List<UploadTask>> {
 
   void clearCompleted() {
     state = state
-        .where((t) =>
-            t.status != UploadStatus.completed &&
-            t.status != UploadStatus.failed)
+        .where(
+          (t) =>
+              t.status != UploadStatus.completed &&
+              t.status != UploadStatus.failed,
+        )
         .toList();
   }
 

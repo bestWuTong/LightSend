@@ -9,20 +9,30 @@ class PathUtils {
   /// Returns the default download directory for the current platform.
   static Future<String> getDefaultDownloadPath() async {
     if (Platform.isWindows) {
-      final dir = await getDownloadsDirectory();
-      if (dir != null) return dir.path;
+      try {
+        final dir = await getDownloadsDirectory();
+        if (dir != null) return dir.path;
+      } catch (_) {}
       final home = Platform.environment['USERPROFILE'] ?? r'C:\Users\Default';
       return '$home\\Downloads';
     }
-    // Android: prefer shared Downloads folder so users can find files easily
-    final sharedDownload = Directory('/storage/emulated/0/Download');
-    if (await sharedDownload.exists()) return sharedDownload.path;
-    // Fallback to app-specific external storage
-    final extDir = await getExternalStorageDirectory();
-    if (extDir != null) return '${extDir.path}/Download';
-    // Last resort
-    final appDir = await getApplicationDocumentsDirectory();
-    return '${appDir.path}/LightSend';
+    if (Platform.isAndroid) {
+      // Android: prefer shared Downloads folder so users can find files easily.
+      final sharedDownload = Directory('/storage/emulated/0/Download');
+      if (await sharedDownload.exists()) return sharedDownload.path;
+      final extDir = await getExternalStorageDirectory();
+      if (extDir != null) return '${extDir.path}/Download';
+    }
+    try {
+      final dir = await getDownloadsDirectory();
+      if (dir != null) return dir.path;
+    } catch (_) {}
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      return '${appDir.path}${Platform.pathSeparator}LightSend';
+    } catch (_) {
+      return '.';
+    }
   }
 
   /// Returns a shortened display form of [path].

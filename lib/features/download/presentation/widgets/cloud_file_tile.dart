@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/cloud_file.dart';
@@ -17,37 +16,6 @@ class CloudFileTile extends ConsumerStatefulWidget {
 }
 
 class _CloudFileTileState extends ConsumerState<CloudFileTile> {
-  bool _isCopying = false;
-
-  Future<void> _copyText() async {
-    if (_isCopying) return;
-
-    setState(() {
-      _isCopying = true;
-    });
-
-    try {
-      await copyTextContent(ref, widget.file);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('已复制到剪贴板')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('复制失败: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isCopying = false;
-        });
-      }
-    }
-  }
-
   void _openTextViewer() {
     showTextViewer(context, widget.file);
   }
@@ -55,9 +23,7 @@ class _CloudFileTileState extends ConsumerState<CloudFileTile> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tasks = ref.watch(
-      downloadProvider.select((s) => s.tasks),
-    );
+    final tasks = ref.watch(downloadProvider.select((s) => s.tasks));
     final existingTask = tasks.firstWhereOrNull(
       (t) => t.cloudFile.remotePath == widget.file.remotePath,
     );
@@ -113,12 +79,10 @@ class _CloudFileTileState extends ConsumerState<CloudFileTile> {
               FilledButton.tonalIcon(
                 onPressed: isQueued
                     ? null
-                    : () =>
-                        ref.read(downloadProvider.notifier).startDownload(widget.file),
-                icon: Icon(
-                  isQueued ? Icons.check : Icons.download,
-                  size: 18,
-                ),
+                    : () => ref
+                          .read(downloadProvider.notifier)
+                          .startDownload(widget.file),
+                icon: Icon(isQueued ? Icons.check : Icons.download, size: 18),
                 label: Text(isQueued ? '已添加' : '下载'),
                 style: FilledButton.styleFrom(
                   visualDensity: VisualDensity.compact,
@@ -130,8 +94,9 @@ class _CloudFileTileState extends ConsumerState<CloudFileTile> {
               tooltip: '删除云端文件',
               color: theme.colorScheme.error.withValues(alpha: 0.7),
               visualDensity: VisualDensity.compact,
-              onPressed: () =>
-                  ref.read(downloadProvider.notifier).deleteCloudFile(widget.file),
+              onPressed: () => ref
+                  .read(downloadProvider.notifier)
+                  .deleteCloudFile(widget.file),
             ),
           ],
         ),

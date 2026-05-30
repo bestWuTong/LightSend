@@ -65,8 +65,7 @@ class DownloadState {
 
 // ─── Provider ─────────────────────────────────────────────────────────────
 
-final downloadProvider =
-    StateNotifierProvider<DownloadNotifier, DownloadState>(
+final downloadProvider = StateNotifierProvider<DownloadNotifier, DownloadState>(
   (ref) => DownloadNotifier(ref),
 );
 
@@ -167,8 +166,9 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   Future<void> _startNext() async {
     if (_isDownloading) return;
 
-    final index =
-        state.tasks.indexWhere((t) => t.status == DownloadStatus.pending);
+    final index = state.tasks.indexWhere(
+      (t) => t.status == DownloadStatus.pending,
+    );
     if (index < 0) return;
 
     _isDownloading = true;
@@ -232,10 +232,10 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     state = state.copyWith(
       tasks: state.tasks.map((t) {
         if (t.id != id) return t;
-        final elapsed =
-            now.difference(t.createdAt).inMilliseconds / 1000;
-        final speed =
-            elapsed > 0 ? (bytesDownloaded / elapsed).toDouble() : 0.0;
+        final elapsed = now.difference(t.createdAt).inMilliseconds / 1000;
+        final speed = elapsed > 0
+            ? (bytesDownloaded / elapsed).toDouble()
+            : 0.0;
         return t.copyWith(
           status: DownloadStatus.downloading,
           bytesDownloaded: bytesDownloaded,
@@ -250,6 +250,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
       tasks: state.tasks.map((t) {
         if (t.id != id) return t;
         return t.copyWith(
+          localPath: localPath,
           status: DownloadStatus.completed,
           bytesDownloaded: t.cloudFile.size,
           speed: 0,
@@ -273,9 +274,19 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 
   void cancelCurrent() {
-    _currentCancelToken?.cancel();
-    _currentCancelToken = null;
-    _isDownloading = false;
+    DownloadTask? activeTask;
+    for (final task in state.tasks) {
+      if (task.status == DownloadStatus.downloading) {
+        activeTask = task;
+        break;
+      }
+    }
+
+    _currentCancelToken?.cancel('已取消');
+
+    if (activeTask != null) {
+      _markFailed(activeTask.id, '已取消');
+    }
   }
 
   Future<void> retry(String id) async {
@@ -300,7 +311,8 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
 
   void remove(String id) {
     if (state.tasks.any(
-        (t) => t.id == id && t.status == DownloadStatus.downloading)) {
+      (t) => t.id == id && t.status == DownloadStatus.downloading,
+    )) {
       cancelCurrent();
     }
     state = state.copyWith(
@@ -312,9 +324,11 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   void clearCompleted() {
     state = state.copyWith(
       tasks: state.tasks
-          .where((t) =>
-              t.status != DownloadStatus.completed &&
-              t.status != DownloadStatus.failed)
+          .where(
+            (t) =>
+                t.status != DownloadStatus.completed &&
+                t.status != DownloadStatus.failed,
+          )
           .toList(),
     );
   }
@@ -368,11 +382,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
         }
       }
 
-      state = state.copyWith(
-        cloudFiles: [],
-        tasks: [],
-        isLoading: false,
-      );
+      state = state.copyWith(cloudFiles: [], tasks: [], isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: '清空失败: $e');
     }

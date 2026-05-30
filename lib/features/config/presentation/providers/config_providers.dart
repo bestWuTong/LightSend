@@ -33,20 +33,16 @@ final configRepositoryProvider = Provider<ConfigRepository>((ref) {
   );
 });
 
-final webdavServiceProvider = Provider<WebdavService>(
-  (ref) => WebdavService(),
-);
+final webdavServiceProvider = Provider<WebdavService>((ref) => WebdavService());
 
-final sendtoServiceProvider = Provider<SendtoService>(
-  (ref) => SendtoService(),
-);
+final sendtoServiceProvider = Provider<SendtoService>((ref) => SendtoService());
 
 // ─── Public config state ─────────────────────────────────────────────────────
 
 final configProvider =
     StateNotifierProvider<ConfigNotifier, AsyncValue<ConfigModel>>((ref) {
-  return ConfigNotifier(ref);
-});
+      return ConfigNotifier(ref);
+    });
 
 class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
   final Ref _ref;
@@ -63,10 +59,7 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
       if (config.downloadPath.path.isEmpty) {
         final defaultPath = await PathUtils.getDefaultDownloadPath();
         config = config.copyWith(
-          downloadPath: DownloadPathConfig(
-            path: defaultPath,
-            isDefault: true,
-          ),
+          downloadPath: DownloadPathConfig(path: defaultPath, isDefault: true),
         );
         await repository.saveConfig(config);
       }
@@ -133,7 +126,9 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
     if (current == null) return false;
 
     final service = _ref.read(sendtoServiceProvider);
-    final success = value ? await service.register() : await service.unregister();
+    final success = value
+        ? await service.register()
+        : await service.unregister();
 
     if (success) {
       final updated = current.copyWith(sendToMenuEnabled: value);
@@ -149,7 +144,11 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
   /// Saves a WebDAV config as a named profile.
   /// If [profileId] is provided, updates an existing profile instead of creating.
   /// [config] overrides the current active config (used when editing via dialog).
-  Future<bool> saveProfile(String name, {String? profileId, WebdavConfig? config}) async {
+  Future<bool> saveProfile(
+    String name, {
+    String? profileId,
+    WebdavConfig? config,
+  }) async {
     final current = state.valueOrNull;
     if (current == null) return false;
 
@@ -161,26 +160,25 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
       // Update existing profile
       final idx = profiles.indexWhere((p) => p.id == profileId);
       if (idx < 0) return false;
-      profiles[idx] = profiles[idx].copyWith(
-        name: name,
-        config: cfg,
-      );
+      profiles[idx] = profiles[idx].copyWith(name: name, config: cfg);
     } else {
       // Create new profile
-      profiles.add(WebdavProfile(
-        id: id,
-        name: name,
-        config: cfg,
-        createdAt: DateTime.now(),
-      ));
+      profiles.add(
+        WebdavProfile(
+          id: id,
+          name: name,
+          config: cfg,
+          createdAt: DateTime.now(),
+        ),
+      );
     }
 
-    // A new profile always activates; an edit only updates if it's the active one
-    final shouldUpdateWebdav = profileId == null || current.activeProfileId == profileId;
+    final isNewProfile = profileId == null;
+    final isActiveProfile = current.activeProfileId == profileId;
     final updated = current.copyWith(
       profiles: profiles,
-      activeProfileId: id,
-      webdav: shouldUpdateWebdav ? cfg : current.webdav,
+      activeProfileId: isNewProfile ? id : current.activeProfileId,
+      webdav: (isNewProfile || isActiveProfile) ? cfg : current.webdav,
     );
     state = AsyncValue.data(updated);
     await _ref.read(configRepositoryProvider).saveConfig(updated);
@@ -192,10 +190,10 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
     if (current == null) return false;
 
     final profiles = current.profiles.where((p) => p.id != id).toList();
+    final isActiveProfile = current.activeProfileId == id;
     final updated = current.copyWith(
       profiles: profiles,
-      activeProfileId:
-          current.activeProfileId == id ? null : current.activeProfileId,
+      clearActiveProfile: isActiveProfile,
     );
     state = AsyncValue.data(updated);
     await _ref.read(configRepositoryProvider).saveConfig(updated);
