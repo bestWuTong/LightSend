@@ -113,9 +113,6 @@ class _WebdavConfigSectionState extends ConsumerState<WebdavConfigSection> {
     if (!_validateInput(input)) return;
 
     ref.read(configProvider.notifier).updateWebdavConfig(input);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('WebDAV配置已保存')),
-    );
   }
 
   Future<void> _saveAsProfile() async {
@@ -151,11 +148,6 @@ class _WebdavConfigSectionState extends ConsumerState<WebdavConfigSection> {
 
     if (name != null && name.isNotEmpty) {
       await ref.read(configProvider.notifier).saveProfile(name);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已保存配置"$name"')),
-        );
-      }
     }
   }
 
@@ -320,9 +312,7 @@ class _WebdavConfigSectionState extends ConsumerState<WebdavConfigSection> {
           label: Text(_isTesting ? '测试中...' : '测试连接'),
         ),
         const SizedBox(width: UiConstants.spacingMd),
-        Expanded(
-          child: _buildTestStatus(),
-        ),
+        Expanded(child: _buildTestStatus()),
       ],
     );
   }
@@ -333,7 +323,11 @@ class _WebdavConfigSectionState extends ConsumerState<WebdavConfigSection> {
     }
     if (_testResult == null) {
       // Check if the saved config has a lastTestSucceeded
-      final saved = ref.watch(configProvider).valueOrNull?.webdav.lastTestSucceeded;
+      final saved = ref
+          .watch(configProvider)
+          .valueOrNull
+          ?.webdav
+          .lastTestSucceeded;
       if (saved == true) return StatusIndicator.success('上次连接成功');
       if (saved == false) return StatusIndicator.failure('上次连接失败');
       return const SizedBox.shrink();

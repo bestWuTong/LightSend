@@ -117,14 +117,9 @@ class WebdavProfileList extends ConsumerWidget {
     if (rawConfig == null || rawConfig.trim().isEmpty) return;
 
     try {
-      final count = await ref
+      await ref
           .read(configProvider.notifier)
           .importWebdavProfiles(rawConfig.trim());
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('已导入$count个配置')));
-      }
     } catch (_) {
       if (context.mounted) {
         await ConfigDialogs.showError(context, '导入失败', '配置内容无效，请检查后重新导入。');
@@ -319,14 +314,7 @@ class _ProfileTile extends ConsumerWidget {
 
   Future<void> _activate(BuildContext context, WidgetRef ref) async {
     if (isActive) return;
-    final success = await ref
-        .read(configProvider.notifier)
-        .activateProfile(profile.id);
-    if (context.mounted && success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('已切换到"${profile.name}"')));
-    }
+    await ref.read(configProvider.notifier).activateProfile(profile.id);
   }
 
   void _edit(BuildContext context) {
@@ -345,13 +333,6 @@ class _ProfileTile extends ConsumerWidget {
     );
     if (!confirmed) return;
 
-    final success = await ref
-        .read(configProvider.notifier)
-        .deleteProfile(profile.id);
-    if (context.mounted && success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('已删除"${profile.name}"')));
-    }
+    await ref.read(configProvider.notifier).deleteProfile(profile.id);
   }
 }

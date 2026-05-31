@@ -50,16 +50,10 @@ class _ConfigPageState extends ConsumerState<ConfigPage> {
       setState(() {
         _sendToMenuEnabled = success ? value : _sendToMenuEnabled;
       });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              success
-                  ? (value ? '已添加到"发送到"菜单' : '已从"发送到"菜单移除')
-                  : '操作失败，请检查系统权限',
-            ),
-          ),
-        );
+      if (!success && mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('操作失败，请检查系统权限')));
       }
     }
   }
