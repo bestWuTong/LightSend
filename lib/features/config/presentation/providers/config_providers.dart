@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -45,6 +47,8 @@ final configProvider =
     });
 
 class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
+  static const String _webdavProfilesExportType = 'lightsend.webdav_profiles';
+
   final Ref _ref;
 
   ConfigNotifier(this._ref) : super(const AsyncValue.loading()) {
@@ -189,6 +193,86 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
     state = AsyncValue.data(updated);
     await _ref.read(configRepositoryProvider).saveConfig(updated);
     return true;
+  }
+
+  String? exportWebdavProfiles(List<String> profileIds) {
+    final current = state.valueOrNull;
+    if (current == null || profileIds.isEmpty) return null;
+
+    final selectedIds = profileIds.toSet();
+    final profiles = current.profiles
+        .where((profile) => selectedIds.contains(profile.id))
+        .toList();
+    if (profiles.isEmpty) return null;
+
+    final encryptor = _ref.read(configEncryptorProvider);
+    return const JsonEncoder.withIndent('  ').convert({
+      'type': _webdavProfilesExportType,
+      'version': 1,
+      'exportedAt': DateTime.now().toIso8601String(),
+      'profiles': profiles.map((profile) => profile.toJson(encryptor)).toList(),
+    });
+  }
+
+  Future<int> importWebdavProfiles(String rawConfig) async {
+    final current = state.valueOrNull;
+    if (current == null) return 0;
+
+    final decoded = jsonDecode(rawConfig);
+    final List<dynamic> rawProfiles;
+    if (decoded is Map<String, dynamic>) {
+      if (decoded['type'] != _webdavProfilesExportType) {
+        throw const FormatException('Unsupported WebDAV config export format');
+      }
+      rawProfiles = decoded['profiles'] as List<dynamic>? ?? const [];
+    } else if (decoded is List<dynamic>) {
+      rawProfiles = decoded;
+    } else {
+      throw const FormatException('Invalid WebDAV config export format');
+    }
+
+    if (rawProfiles.isEmpty) {
+      throw const FormatException('No WebDAV profiles found');
+    }
+
+    final encryptor = _ref.read(configEncryptorProvider);
+    final uuid = const Uuid();
+    final importedProfiles = <WebdavProfile>[];
+
+    for (final rawProfile in rawProfiles) {
+      if (rawProfile is! Map<String, dynamic>) {
+        throw const FormatException('Invalid WebDAV profile entry');
+      }
+
+      final profile = WebdavProfile.fromJson(rawProfile, encryptor);
+      if (!profile.config.isConfigured) {
+        throw const FormatException('Invalid WebDAV profile config');
+      }
+
+      importedProfiles.add(
+        WebdavProfile(
+          id: uuid.v4(),
+          name: profile.name,
+          config: profile.config.copyWith(clearLastTest: true),
+          createdAt: DateTime.now(),
+        ),
+      );
+    }
+
+    final shouldActivateFirst =
+        current.activeProfileId == null && !current.webdav.isConfigured;
+    final updated = current.copyWith(
+      profiles: [...current.profiles, ...importedProfiles],
+      activeProfileId: shouldActivateFirst
+          ? importedProfiles.first.id
+          : current.activeProfileId,
+      webdav: shouldActivateFirst
+          ? importedProfiles.first.config
+          : current.webdav,
+    );
+    state = AsyncValue.data(updated);
+    await _ref.read(configRepositoryProvider).saveConfig(updated);
+    return importedProfiles.length;
   }
 
   Future<bool> renameProfile(String id, String newName) async {

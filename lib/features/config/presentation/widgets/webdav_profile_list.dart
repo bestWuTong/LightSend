@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../../core/constants/ui_constants.dart';
 import '../../data/models/webdav_profile.dart';
@@ -31,15 +32,37 @@ class WebdavProfileList extends ConsumerWidget {
             icon: const Icon(Icons.add, size: 18),
             label: const Text('新建配置'),
           ),
+          const SizedBox(height: UiConstants.spacingSm),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: profiles.isEmpty
+                      ? null
+                      : () => _exportProfiles(context, ref, profiles),
+                  icon: const Icon(Icons.upload_file_outlined, size: 18),
+                  label: const Text('导出配置'),
+                ),
+              ),
+              const SizedBox(width: UiConstants.spacingMd),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _importProfiles(context, ref),
+                  icon: const Icon(
+                    Icons.download_for_offline_outlined,
+                    size: 18,
+                  ),
+                  label: const Text('导入配置'),
+                ),
+              ),
+            ],
+          ),
           if (profiles.isNotEmpty) ...[
             const Divider(height: UiConstants.spacingLg),
             ...List.generate(profiles.length, (index) {
               final profile = profiles[index];
               final isActive = profile.id == config.activeProfileId;
-              return _ProfileTile(
-                profile: profile,
-                isActive: isActive,
-              );
+              return _ProfileTile(profile: profile, isActive: isActive);
             }),
           ],
         ],
@@ -52,6 +75,178 @@ class WebdavProfileList extends ConsumerWidget {
       MaterialPageRoute(
         builder: (_) => WebdavConfigDialog(existingProfile: profile),
       ),
+    );
+  }
+
+  Future<void> _exportProfiles(
+    BuildContext context,
+    WidgetRef ref,
+    List<WebdavProfile> profiles,
+  ) async {
+    final selectedIds = await showDialog<List<String>>(
+      context: context,
+      builder: (ctx) => _WebdavProfileExportDialog(profiles: profiles),
+    );
+    if (selectedIds == null || selectedIds.isEmpty) return;
+
+    final exported = ref
+        .read(configProvider.notifier)
+        .exportWebdavProfiles(selectedIds);
+    if (exported == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('没有可导出的配置')));
+      }
+      return;
+    }
+
+    await Clipboard.setData(ClipboardData(text: exported));
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('已复制到剪贴板')));
+    }
+  }
+
+  Future<void> _importProfiles(BuildContext context, WidgetRef ref) async {
+    final rawConfig = await showDialog<String>(
+      context: context,
+      builder: (ctx) => const _WebdavProfileImportDialog(),
+    );
+    if (rawConfig == null || rawConfig.trim().isEmpty) return;
+
+    try {
+      final count = await ref
+          .read(configProvider.notifier)
+          .importWebdavProfiles(rawConfig.trim());
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('已导入$count个配置')));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        await ConfigDialogs.showError(context, '导入失败', '配置内容无效，请检查后重新导入。');
+      }
+    }
+  }
+}
+
+class _WebdavProfileExportDialog extends StatefulWidget {
+  final List<WebdavProfile> profiles;
+
+  const _WebdavProfileExportDialog({required this.profiles});
+
+  @override
+  State<_WebdavProfileExportDialog> createState() =>
+      _WebdavProfileExportDialogState();
+}
+
+class _WebdavProfileExportDialogState
+    extends State<_WebdavProfileExportDialog> {
+  late final Set<String> _selectedIds;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIds = widget.profiles.map((profile) => profile.id).toSet();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('导出WebDAV配置'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: widget.profiles.length,
+          itemBuilder: (ctx, index) {
+            final profile = widget.profiles[index];
+            return CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _selectedIds.contains(profile.id),
+              title: Text(profile.name),
+              subtitle: Text(
+                '${profile.config.account}@${Uri.tryParse(profile.config.url)?.host ?? profile.config.url}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              onChanged: (selected) {
+                setState(() {
+                  if (selected == true) {
+                    _selectedIds.add(profile.id);
+                  } else {
+                    _selectedIds.remove(profile.id);
+                  }
+                });
+              },
+            );
+          },
+        ),
+      ),
+      actions: [
+        OutlinedButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: _selectedIds.isEmpty
+              ? null
+              : () => Navigator.of(context).pop(_selectedIds.toList()),
+          child: const Text('确定'),
+        ),
+      ],
+    );
+  }
+}
+
+class _WebdavProfileImportDialog extends StatefulWidget {
+  const _WebdavProfileImportDialog();
+
+  @override
+  State<_WebdavProfileImportDialog> createState() =>
+      _WebdavProfileImportDialogState();
+}
+
+class _WebdavProfileImportDialogState
+    extends State<_WebdavProfileImportDialog> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('导入WebDAV配置'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: TextField(
+          controller: _controller,
+          autofocus: true,
+          minLines: 8,
+          maxLines: 12,
+          decoration: const InputDecoration(
+            hintText: '粘贴已复制的配置',
+            border: OutlineInputBorder(),
+          ),
+        ),
+      ),
+      actions: [
+        OutlinedButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          child: const Text('导入'),
+        ),
+      ],
     );
   }
 }
@@ -108,8 +303,11 @@ class _ProfileTile extends ConsumerWidget {
             onPressed: () => _edit(context),
           ),
           IconButton(
-            icon:
-                Icon(Icons.delete_outline, size: 20, color: theme.colorScheme.error),
+            icon: Icon(
+              Icons.delete_outline,
+              size: 20,
+              color: theme.colorScheme.error,
+            ),
             tooltip: '删除',
             onPressed: () => _delete(context, ref),
           ),
@@ -121,12 +319,13 @@ class _ProfileTile extends ConsumerWidget {
 
   Future<void> _activate(BuildContext context, WidgetRef ref) async {
     if (isActive) return;
-    final success =
-        await ref.read(configProvider.notifier).activateProfile(profile.id);
+    final success = await ref
+        .read(configProvider.notifier)
+        .activateProfile(profile.id);
     if (context.mounted && success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已切换到"${profile.name}"')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('已切换到"${profile.name}"')));
     }
   }
 
@@ -146,12 +345,13 @@ class _ProfileTile extends ConsumerWidget {
     );
     if (!confirmed) return;
 
-    final success =
-        await ref.read(configProvider.notifier).deleteProfile(profile.id);
+    final success = await ref
+        .read(configProvider.notifier)
+        .deleteProfile(profile.id);
     if (context.mounted && success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已删除"${profile.name}"')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('已删除"${profile.name}"')));
     }
   }
 }
