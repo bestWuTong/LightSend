@@ -130,16 +130,30 @@ void _parseArgs(List<String> args) {
   for (var i = 0; i < args.length; i++) {
     if (args[i] == '--upload' && i + 1 < args.length) {
       // Explicit --upload flag from registry context menu
-      pendingUploadPaths.add(args[i + 1]);
+      final path = _normalizeUploadArgument(args[i + 1]);
+      if (path != null) pendingUploadPaths.add(path);
       i++;
     } else if (!args[i].startsWith('-')) {
       // Bare file path from SendTo menu or drag-to-shortcut
-      final file = File(args[i]);
-      if (file.existsSync()) {
-        pendingUploadPaths.add(args[i]);
-      }
+      final path = _normalizeUploadArgument(args[i]);
+      if (path != null) pendingUploadPaths.add(path);
     }
   }
+}
+
+String? _normalizeUploadArgument(String raw) {
+  var path = raw;
+  if (raw.startsWith('file://')) {
+    try {
+      path = Uri.parse(raw).toFilePath(windows: Platform.isWindows);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  final file = File(path);
+  if (!file.existsSync()) return null;
+  return path;
 }
 
 class ErrorApp extends StatelessWidget {

@@ -18,7 +18,7 @@
 
 ## 功能特点
 
-- **跨平台支持** - 当前支持 Windows 和 Android（因为我只有这两种设备🌚），在不同设备间自由传输
+- **跨平台支持** - 当前支持 Windows、Android 和 Linux，在不同设备间自由传输
 - **基于 WebDAV** - 使用标准 WebDAV 协议，安全可靠，兼容性强
 - **优雅界面** - 现代化的设计风格，支持自定义主题颜色
 - **快速分享** - 桌面端支持右键文件选择发送到轻传
@@ -47,8 +47,8 @@
 - **状态管理**: flutter_riverpod
 - **WebDAV 客户端**: webdav_client + dio
 - **本地存储**: shared_preferences
-- **桌面端支持**: tray_manager, window_manager
-- **构建工具**: CMake (Windows), Gradle (Android)
+- **桌面端支持**: window_manager, desktop_drop
+- **构建工具**: CMake (Windows/Linux), Gradle (Android)
 
 ## 构建指南
 
@@ -56,7 +56,7 @@
 
 - Flutter SDK &gt;= 3.11.5
 - Dart SDK &gt;= 3.11.5
-- 对应平台的开发环境（如 Visual Studio, Android Studio 等）
+- 对应平台的开发环境（如 Visual Studio, Android Studio、Linux GTK/CMake 工具链等）
 
 ### 克隆项目
 
@@ -79,6 +79,9 @@ flutter run -d windows
 
 # Android
 flutter run -d android
+
+# Linux
+flutter run -d linux
 ```
 
 ### 构建发布版本
@@ -89,6 +92,9 @@ flutter build windows
 
 # Android
 flutter build apk --release
+
+# Linux
+flutter build linux --release
 ```
 
 ## 开发者

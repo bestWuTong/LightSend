@@ -3,9 +3,9 @@ import 'dart:io' as io;
 import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/utils/path_utils.dart';
 import '../../../../features/config/config.dart';
 import '../../data/models/cloud_file.dart';
 import '../../data/models/download_task.dart';
@@ -120,7 +120,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
     final task = DownloadTask(
       id: const Uuid().v4(),
       cloudFile: file,
-      localPath: '$localDir/${file.name}',
+      localPath: PathUtils.joinPath(localDir, file.name),
       createdAt: DateTime.now(),
     );
 
@@ -129,38 +129,7 @@ class DownloadNotifier extends StateNotifier<DownloadState> {
   }
 
   Future<String> _defaultDownloadDir() async {
-    try {
-      if (io.Platform.isAndroid) {
-        // 1st: shared system Download folder
-        final shared = io.Directory('/storage/emulated/0/Download');
-        if (await shared.exists()) return shared.path;
-        // 2nd: app external storage Download subdir
-        final extDir = await getExternalStorageDirectory();
-        if (extDir != null) {
-          final d = io.Directory('${extDir.path}/Download');
-          if (!await d.exists()) await d.create(recursive: true);
-          return d.path;
-        }
-        // 3rd: app internal documents
-        final appDir = await getApplicationDocumentsDirectory();
-        final d2 = io.Directory('${appDir.path}/LightSend');
-        if (!await d2.exists()) await d2.create(recursive: true);
-        return d2.path;
-      }
-      if (io.Platform.isWindows) {
-        final dir = await getDownloadsDirectory();
-        if (dir != null && await io.Directory(dir.path).exists()) {
-          return dir.path;
-        }
-      }
-    } catch (_) {}
-    // Absolute last resort
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      return dir.path;
-    } catch (_) {
-      return '.';
-    }
+    return PathUtils.getDefaultDownloadPath();
   }
 
   Future<void> _startNext() async {

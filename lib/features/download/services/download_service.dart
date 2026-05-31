@@ -4,6 +4,7 @@ import 'dart:io' as io;
 import 'package:webdav_client/webdav_client.dart' as wc;
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/path_utils.dart';
 import '../../../features/config/config.dart';
 import '../data/models/cloud_file.dart';
 
@@ -93,14 +94,14 @@ class DownloadService {
   }
 
   String _resolveLocalPath(String dir, String fileName) {
-    final path = '$dir/$fileName';
+    final path = PathUtils.joinPath(dir, fileName);
     if (!io.File(path).existsSync()) return path;
 
     final dot = fileName.lastIndexOf('.');
     final name = dot > 0 ? fileName.substring(0, dot) : fileName;
     final ext = dot > 0 ? fileName.substring(dot) : '';
     final ts = DateTime.now().millisecondsSinceEpoch;
-    return '$dir/${name}_$ts$ext';
+    return PathUtils.joinPath(dir, '${name}_$ts$ext');
   }
 
   /// Deletes a file from the WebDAV server.

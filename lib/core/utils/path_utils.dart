@@ -23,6 +23,24 @@ class PathUtils {
       final extDir = await getExternalStorageDirectory();
       if (extDir != null) return '${extDir.path}/Download';
     }
+    if (Platform.isLinux) {
+      try {
+        final dir = await getDownloadsDirectory();
+        if (dir != null) {
+          return dir.path;
+        }
+      } catch (_) {}
+
+      final xdgDownloadDir = await _readLinuxXdgDownloadDir();
+      if (xdgDownloadDir != null) {
+        return xdgDownloadDir;
+      }
+
+      final home = Platform.environment['HOME'];
+      if (home != null && home.isNotEmpty) {
+        return joinPath(home, 'Downloads');
+      }
+    }
     try {
       final dir = await getDownloadsDirectory();
       if (dir != null) return dir.path;
@@ -35,6 +53,16 @@ class PathUtils {
     }
   }
 
+  /// Joins [directory] and [fileName] using the current platform separator.
+  static String joinPath(String directory, String fileName) {
+    if (directory.isEmpty) return fileName;
+    final sep = Platform.pathSeparator;
+    if (directory.endsWith('/') || directory.endsWith(r'\')) {
+      return '$directory$fileName';
+    }
+    return '$directory$sep$fileName';
+  }
+
   /// Returns a shortened display form of [path].
   static String displayPath(String path, {int maxSegments = 3}) {
     final sep = Platform.pathSeparator;
@@ -42,5 +70,29 @@ class PathUtils {
     if (parts.length <= maxSegments) return path;
     final tail = parts.sublist(parts.length - maxSegments).join(sep);
     return '...$sep$tail';
+  }
+
+  static Future<String?> _readLinuxXdgDownloadDir() async {
+    final home = Platform.environment['HOME'];
+    if (home == null || home.isEmpty) return null;
+
+    final configFile = File(joinPath(home, '.config/user-dirs.dirs'));
+    if (!await configFile.exists()) return null;
+
+    try {
+      final lines = await configFile.readAsLines();
+      for (final line in lines) {
+        final trimmed = line.trim();
+        if (!trimmed.startsWith('XDG_DOWNLOAD_DIR=')) continue;
+
+        final value = trimmed
+            .substring('XDG_DOWNLOAD_DIR='.length)
+            .trim()
+            .replaceAll(RegExp(r'^"|"$'), '');
+        if (value.isEmpty) return null;
+        return value.replaceFirst(r'$HOME', home);
+      }
+    } catch (_) {}
+    return null;
   }
 }

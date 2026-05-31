@@ -12,7 +12,7 @@ import '../widgets/drop_zone.dart';
 import '../widgets/upload_task_tile.dart';
 import 'text_input_page.dart';
 
-/// Main upload page. On Windows: drag-drop + file picker. On Android: file picker.
+/// Main upload page. On desktop: drag-drop + file picker. On Android: file picker.
 class UploadPage extends ConsumerStatefulWidget {
   const UploadPage({super.key});
 

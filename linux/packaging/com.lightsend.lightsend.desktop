@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=LightSend
+Name[zh_CN]=轻传
+Comment=Lightweight WebDAV file transfer tool
+Comment[zh_CN]=基于 WebDAV 的跨平台文件传输工具
+Exec=lightsend %F
+Icon=com.lightsend.lightsend
+Terminal=false
+Categories=Utility;Network;FileTransfer;
+StartupNotify=true

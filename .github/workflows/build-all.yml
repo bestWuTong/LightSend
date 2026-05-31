@@ -1,0 +1,23 @@
+name: Build All Platforms
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows x64
+    uses: ./.github/workflows/build-windows.yml
+
+  android:
+    name: Android APK
+    uses: ./.github/workflows/build-android.yml
+
+  linux:
+    name: Linux x64
+    uses: ./.github/workflows/build-linux.yml

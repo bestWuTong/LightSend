@@ -1,0 +1,120 @@
+name: Build Linux
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux:
+    name: Linux x64
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve package version
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -nE 's/^version:[[:space:]]*([^+[:space:]]+).*/\1/p' pubspec.yaml | head -n 1)"
+          if [ -z "$version" ]; then
+            echo "Could not find version in pubspec.yaml" >&2
+            exit 1
+          fi
+          tar_name="LightSend-$version-linux-x64.tar.gz"
+          deb_name="LightSend-$version-linux-x64.deb"
+          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+          echo "TAR_NAME=$tar_name" >> "$GITHUB_ENV"
+          echo "DEB_NAME=$deb_name" >> "$GITHUB_ENV"
+          echo "app_version=$version" >> "$GITHUB_OUTPUT"
+          echo "tar_name=$tar_name" >> "$GITHUB_OUTPUT"
+          echo "deb_name=$deb_name" >> "$GITHUB_OUTPUT"
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Enable Linux desktop
+        run: flutter config --enable-linux-desktop
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Build Linux release
+        run: flutter build linux --release
+
+      - name: Package Linux release
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_dir="build/linux/x64/release/bundle"
+          if [ ! -d "$source_dir" ]; then
+            echo "Linux build output not found: $source_dir" >&2
+            exit 1
+          fi
+          mkdir -p dist
+          tar -C "$source_dir" -czf "dist/$TAR_NAME" .
+
+      - name: Package Linux deb
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_dir="build/linux/x64/release/bundle"
+          package_root="build/linux/x64/release/deb/lightsend"
+          install_dir="$package_root/opt/lightsend"
+          mkdir -p "$install_dir" "$package_root/usr/bin" "$package_root/usr/share/applications" \
+            "$package_root/usr/share/icons/hicolor/512x512/apps" "$package_root/DEBIAN"
+
+          cp -a "$source_dir/." "$install_dir/"
+          cp linux/packaging/com.lightsend.lightsend.desktop "$package_root/usr/share/applications/com.lightsend.lightsend.desktop"
+          cp assets/轻传icon.png "$package_root/usr/share/icons/hicolor/512x512/apps/com.lightsend.lightsend.png"
+
+          printf '%s\n' '#!/usr/bin/env sh' 'exec /opt/lightsend/lightsend "$@"' > "$package_root/usr/bin/lightsend"
+          chmod 755 "$package_root/usr/bin/lightsend"
+
+          installed_size="$(du -sk "$package_root" | cut -f1)"
+          {
+            echo "Package: lightsend"
+            echo "Version: $APP_VERSION"
+            echo "Section: utils"
+            echo "Priority: optional"
+            echo "Architecture: amd64"
+            echo "Depends: libgtk-3-0, libglib2.0-0, libstdc++6, liblzma5"
+            echo "Recommends: zenity | kdialog"
+            echo "Installed-Size: $installed_size"
+            echo "Maintainer: bestWuTong <bestwutong@users.noreply.github.com>"
+            echo "Homepage: https://github.com/bestWuTong/LightSend"
+            echo "Description: LightSend WebDAV file transfer tool"
+            echo " LightSend is a lightweight cross-platform file transfer tool based on WebDAV."
+          } > "$package_root/DEBIAN/control"
+
+          dpkg-deb --build --root-owner-group "$package_root" "dist/$DEB_NAME"
+
+      - name: Upload Linux tar package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.tar_name }}
+          path: dist/${{ steps.meta.outputs.tar_name }}
+          if-no-files-found: error
+
+      - name: Upload Linux deb package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.deb_name }}
+          path: dist/${{ steps.meta.outputs.deb_name }}
+          if-no-files-found: error
