@@ -10,7 +10,7 @@ permissions:
 jobs:
   build-linux:
     name: Linux x64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
@@ -94,7 +94,7 @@ jobs:
             echo "Section: utils"
             echo "Priority: optional"
             echo "Architecture: amd64"
-            echo "Depends: libgtk-3-0, libglib2.0-0, libstdc++6, liblzma5"
+            echo "Depends: libgtk-3-0 (>= 3.24), libglib2.0-0 (>= 2.72), libstdc++6, liblzma5"
             echo "Recommends: zenity | kdialog"
             echo "Installed-Size: $installed_size"
             echo "Maintainer: bestWuTong <bestwutong@users.noreply.github.com>"
