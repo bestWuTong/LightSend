@@ -124,10 +124,11 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 # Install Linux desktop integration files into the relocatable bundle. Package
 # builders can copy these paths into /usr/share when creating .deb/.rpm/AppImage.
 set(LINUX_PACKAGING_DIR "${CMAKE_CURRENT_SOURCE_DIR}/packaging")
+set(LINUX_APP_ICON "${CMAKE_CURRENT_SOURCE_DIR}/../assets/轻传icon.png")
 install(FILES "${LINUX_PACKAGING_DIR}/${APPLICATION_ID}.desktop"
   DESTINATION "${CMAKE_INSTALL_PREFIX}/share/applications"
   COMPONENT Runtime)
-install(FILES "${PROJECT_DIR}/assets/轻传icon.png"
+install(FILES "${LINUX_APP_ICON}"
   DESTINATION "${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/512x512/apps"
   RENAME "${APPLICATION_ID}.png"
   COMPONENT Runtime)
