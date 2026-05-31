@@ -188,6 +188,7 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
     final isActiveProfile = current.activeProfileId == id;
     final updated = current.copyWith(
       profiles: profiles,
+      webdav: isActiveProfile ? WebdavConfig.empty() : current.webdav,
       clearActiveProfile: isActiveProfile,
     );
     state = AsyncValue.data(updated);
