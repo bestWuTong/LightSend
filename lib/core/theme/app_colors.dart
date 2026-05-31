@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Default brand seed color (Material Green 500)
-  static const Color defaultSeed = Color(0xFF4CAF50);
+  // Default brand seed color (Cyan 500)
+  static const Color defaultSeed = Color(0xFF00BCD4);
 
   // Status colors
   static const Color success = Color(0xFF4CAF50);
@@ -14,6 +14,7 @@ class AppColors {
 
   /// Preset seed colors for the theme picker.
   static const List<Color> presets = [
+    Color(0xFF00BCD4), // Cyan
     Color(0xFF4CAF50), // Green
     Color(0xFF2196F3), // Blue
     Color(0xFF9C27B0), // Purple
@@ -22,7 +23,6 @@ class AppColors {
     Color(0xFFFF9800), // Orange
     Color(0xFF795548), // Brown
     Color(0xFF607D8B), // Blue Grey
-    Color(0xFF00BCD4), // Cyan
     Color(0xFF8BC34A), // Light Green
     Color(0xFF3F51B5), // Indigo
     Color(0xFFFF5722), // Deep Orange

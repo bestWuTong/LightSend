@@ -14,7 +14,7 @@ class ConfigModel {
   final int seedColor;
   final String themeMode;
 
-  static const int defaultSeedColor = 0xFF4CAF50;
+  static const int defaultSeedColor = 0xFF00BCD4;
   static const String defaultThemeMode = 'system';
 
   const ConfigModel({
