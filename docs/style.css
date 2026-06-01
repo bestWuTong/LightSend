@@ -515,9 +515,15 @@ section {
     color: var(--text-medium);
 }
 
-.intro-screenshots-grid {
+.intro-screenshots-grid2 {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
+    gap: 100px;
+}
+
+.intro-screenshots-grid1 {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
     gap: 100px;
 }
 

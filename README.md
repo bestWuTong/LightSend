@@ -3,7 +3,7 @@
 
 &gt; 基于 WebDAV 的轻量化跨平台文件传输工具
 
-![轻传展示图](docs/img/lightsend00.webp)
+![轻传展示图](docs/img/ls.webp)
 
 ---
 
@@ -21,16 +21,20 @@
 - **跨平台支持** - 当前支持 Windows、Android 和 Linux，在不同设备间自由传输
 - **基于 WebDAV** - 使用标准 WebDAV 协议，安全可靠，兼容性强
 - **优雅界面** - 现代化的设计风格，支持自定义主题颜色
-- **快速分享** - 桌面端支持右键文件选择发送到轻传
+- **快速上传** - 集成 Windows “发送到” 和 Android 系统分享
 - **拖拽上传** - 桌面端支持拖拽文件到应用即可上传
 - **多配置管理** - 支持配置多个 WebDAV 服务器配置文件
-- **发送文本** - 新增发送文本功能，直接在软件中复制粘贴文本，不用手动新建txt文件
+- **发送文本** - 除发送文件外还支持发送文本
 
 ## 应用截图
 
 | 文件上传 | 文件下载 | 设置页面 |
 |---------|---------|---------|
-| ![上传](docs/img/lightsend01.png) | ![下载](docs/img/lightsend02.png) | ![设置](docs/img/lightsend03.png) |
+| ![上传](docs/img/ls1.webp) | ![下载](docs/img/ls2.webp) | ![设置](docs/img/ls3.webp) |
+
+| Android 快速上传 | Windows 快速上传 |
+|---------|---------|
+| ![Android 快速上传](docs/img/a_share.webp) | ![Windows 快速上传](docs/img/w_share.webp) |
 
 ## 下载使用
 
@@ -114,4 +118,4 @@ flutter build linux --release
 
 ---
 
-&gt; ✨ 如果这个项目对你有帮助，欢迎给个 Star ⭐ 支持一下！
+如果这个项目对你有帮助，欢迎给个 Star ⭐ 支持一下！
