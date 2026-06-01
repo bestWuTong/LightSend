@@ -17,6 +17,7 @@ jobs:
   android:
     name: Android APK
     uses: ./.github/workflows/build-android.yml
+    secrets: inherit
 
   linux:
     name: Linux x64
