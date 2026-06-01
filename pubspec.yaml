@@ -1,7 +1,7 @@
 name: lightsend
 description: LightSend - 轻传，跨平台文件传输工具
 publish_to: 'none'
-version: 1.3.0+6
+version: 2.0.0+6
 
 environment:
   sdk: ^3.11.5
