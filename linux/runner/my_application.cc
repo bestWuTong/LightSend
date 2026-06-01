@@ -14,6 +14,23 @@ struct _MyApplication {
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
+static constexpr gint kCsdShadowWidth = 16;
+
+static void apply_csd_shadow_width(GtkWidget* widget) {
+  GdkWindow* gdk_window = gtk_widget_get_window(widget);
+  if (gdk_window == nullptr) {
+    return;
+  }
+
+  gdk_window_set_shadow_width(gdk_window, kCsdShadowWidth, kCsdShadowWidth,
+                              kCsdShadowWidth, kCsdShadowWidth);
+}
+
+static void window_shadow_cb(GtkWidget* widget, gpointer user_data) {
+  (void)user_data;
+  apply_csd_shadow_width(widget);
+}
+
 // Called when first Flutter frame received.
 static void first_frame_cb(MyApplication* self, FlView* view) {
   gtk_widget_show(gtk_widget_get_toplevel(GTK_WIDGET(view)));
@@ -49,11 +66,13 @@ static void my_application_activate(GApplication* application) {
     gtk_header_bar_set_title(header_bar, "LightSend");
     gtk_header_bar_set_show_close_button(header_bar, TRUE);
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
+    g_signal_connect(window, "realize", G_CALLBACK(window_shadow_cb), nullptr);
+    g_signal_connect(window, "map", G_CALLBACK(window_shadow_cb), nullptr);
   } else {
     gtk_window_set_title(window, "LightSend");
   }
 
-  gtk_window_set_default_size(window, 1280, 720);
+  gtk_window_set_default_size(window, 480, 680);
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(
