@@ -19,11 +19,6 @@ class LightSendApp extends ConsumerStatefulWidget {
 }
 
 class _LightSendAppState extends ConsumerState<LightSendApp> {
-  static const _defaultWindowSize = Size(
-    AppConstants.windowWidth,
-    AppConstants.windowHeight,
-  );
-
   bool get _isDesktop =>
       Platform.isWindows || Platform.isMacOS || Platform.isLinux;
 
@@ -37,13 +32,16 @@ class _LightSendAppState extends ConsumerState<LightSendApp> {
 
   Future<void> _initWindow() async {
     final options = WindowOptions(
-      minimumSize: _defaultWindowSize,
+      size: const Size(AppConstants.windowWidth, AppConstants.windowHeight),
+      minimumSize: const Size(
+        AppConstants.windowWidth,
+        AppConstants.windowHeight,
+      ),
       title: AppConstants.appNameCN,
+      center: true,
       skipTaskbar: false,
     );
     await windowManager.waitUntilReadyToShow(options, () async {
-      await windowManager.setSize(_defaultWindowSize);
-      await windowManager.center();
       await windowManager.show();
       await windowManager.focus();
     });
