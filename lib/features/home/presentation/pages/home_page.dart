@@ -17,6 +17,7 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   int _currentIndex = 0;
+  bool _hasOpenedDownloadPage = false;
 
   @override
   void initState() {
@@ -37,10 +38,17 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _onTabChanged(int index) {
+    if (_currentIndex == index) {
+      return;
+    }
+
     setState(() => _currentIndex = index);
     // Auto-refresh cloud files when switching to download tab
-    if (index == 1) {
+    if (index == 1 && _hasOpenedDownloadPage) {
       ref.read(downloadProvider.notifier).refreshCloudFiles();
+    }
+    if (index == 1) {
+      _hasOpenedDownloadPage = true;
     }
   }
 
@@ -49,11 +57,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: const [
-          UploadPage(),
-          DownloadPage(),
-          ConfigPage(),
-        ],
+        children: const [UploadPage(), DownloadPage(), ConfigPage()],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
