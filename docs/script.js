@@ -1,6 +1,8 @@
 // ===== 粒子背景效果 =====
 function createParticles() {
     const container = document.getElementById('particles');
+    if (!container || getComputedStyle(container).display === 'none') return;
+
     const particleCount = 20;
 
     for (let i = 0; i < particleCount; i++) {
@@ -50,9 +52,9 @@ function initNavScroll() {
         const currentScroll = window.pageYOffset;
         
         if (currentScroll > 50) {
-            navbar.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+            navbar.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.18), 0 1px 2px rgba(0, 0, 0, 0.12)';
         } else {
-            navbar.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+            navbar.style.boxShadow = 'none';
         }
         
         lastScroll = currentScroll;

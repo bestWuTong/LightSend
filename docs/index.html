@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>轻传 (LightSend) - 跨平台文件传输工具</title>
+    <title>轻传 (LightSend) - 云端文件传输工具</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="/img/icon.png">
 </head>
@@ -15,11 +15,13 @@
     <nav class="navbar">
         <div class="container nav-container">
             <div class="logo">
+                <img src="img/icon.png" alt="轻传图标" class="logo-icon">
                 <span class="logo-text">轻传</span>
             </div>
             <div class="nav-links">
                 <a href="#download" class="nav-link">下载</a>
                 <a href="#features" class="nav-link">功能特点</a>
+                <a href="#screenshots" class="nav-link">应用截图</a>
                 <a href="#about" class="nav-link">关于</a>
             </div>
         </div>
@@ -29,11 +31,12 @@
     <section class="hero">
         <div class="container hero-container">
             <div class="hero-content">
+                <img src="img/icon.png" alt="轻传图标" class="hero-icon">
                 <h1 class="hero-title">
                     <span class="title-main">轻传</span>
                     <span class="title-sub">LightSend</span>
                 </h1>
-                <p class="hero-desc">基于 WebDAV 的轻量化跨平台文件传输工具<br />当前支持 Windows、Android 和 Linux</p>
+                <p class="hero-desc">基于云端存储的轻量化跨平台文件传输工具<br />云存储：支持 OneDrive 和 WebDAV<br />平台：支持 Windows、Android 和 Linux</p>
                 <div class="hero-buttons">
                     <a href="#download" class="btn btn-primary">立即下载</a>
                     <a href="https://github.com/bestWuTong/LightSend" target="_blank" class="btn btn-secondary">GitHub</a>
@@ -71,15 +74,23 @@
     <section id="features" class="features">
         <div class="container">
             <h2 class="section-title">功能特点</h2>
-            <p class="section-subtitle">简单易用，功能强大</p>
+            <p class="section-subtitle">轻传是一款基于 Flutter 开发的跨平台云端文件传输工具，通过用户自己的 OneDrive 个人账户或 WebDAV 服务在不同设备之间传递文件。OneDrive 使用应用专属目录存取文件，WebDAV 可连接自有服务器或兼容服务。无论是在桌面端还是移动端，轻传都能提供便捷的上传、下载和文本发送体验。</p>
             <div class="features-grid">
                 <div class="feature-card">
                     <h3 class="feature-title">跨平台支持</h3>
                     <p class="feature-desc">支持 Windows、Android 和 Linux，在不同设备间自由传输</p>
                 </div>
                 <div class="feature-card">
-                    <h3 class="feature-title">基于 WebDAV</h3>
-                    <p class="feature-desc">使用标准 WebDAV 协议，安全可靠，兼容性强</p>
+                    <h3 class="feature-title">云端存储</h3>
+                    <p class="feature-desc">支持个人 OneDrive 和 WebDAV，使用自己的云端账号或服务器存取文件</p>
+                </div>
+                <div class="feature-card">
+                    <h3 class="feature-title">应用专属目录</h3>
+                    <p class="feature-desc">OneDrive 使用应用专属目录，减少对网盘中其他文件的影响</p>
+                </div>
+                <div class="feature-card">
+                    <h3 class="feature-title">多配置切换</h3>
+                    <p class="feature-desc">可创建多个 OneDrive 或 WebDAV 配置，并在配置列表中快速切换</p>
                 </div>
                 <div class="feature-card">
                     <h3 class="feature-title">优雅界面</h3>
@@ -87,18 +98,18 @@
                 </div>
                 <div class="feature-card">
                     <h3 class="feature-title">快速分享</h3>
-                    <p class="feature-desc">应用小而美，启动迅速；集成 Windows “发送到” 和 Android 系统分享</p>
+                    <p class="feature-desc">应用小而美，启动迅速；集成 Windows “发送到”和 Android 系统分享</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 应用介绍 -->
-    <section class="intro">
+    <!-- 应用截图 -->
+    <section id="screenshots" class="intro">
         <div class="container">
-            <h2 class="section-title">应用介绍</h2>
+            <h2 class="section-title">应用截图</h2>
             <div class="intro-text-full">
-                <p>轻传是一款基于 Flutter 开发的跨平台文件传输工具，利用 WebDAV 协议实现文件在不同设备之间的快速传输。无论是在桌面端还是移动端，轻传都能为您提供便捷的文件传输体验。</p>
+                <p>截图更新可能不及时，请以实际应用为准</p>
             </div>
             <div class="intro-screenshots-grid2">
                 <div class="screenshot-card">
@@ -110,10 +121,24 @@
                     <div class="screenshot-caption">文件下载</div>
                 </div>
             </div>
-            <div class="intro-screenshots-grid1">
+            <div class="intro-screenshots-grid2">
                 <div class="screenshot-card">
                     <img src="img/ls3.webp" alt="设置页面" class="screenshot-img">
                     <div class="screenshot-caption">设置页面</div>
+                </div>
+                <div class="screenshot-card">
+                    <img src="img/ls4.webp" alt="设置页面" class="screenshot-img">
+                    <div class="screenshot-caption">设置页面</div>
+                </div>
+            </div>
+            <div class="intro-screenshots-grid2">
+                <div class="screenshot-card">
+                    <img src="img/ls_webdav.webp" alt="WebDAV配置" class="screenshot-img">
+                    <div class="screenshot-caption">WebDAV配置</div>
+                </div>
+                <div class="screenshot-card">
+                    <img src="img/ls_onedrive.webp" alt="OneDrive配置" class="screenshot-img">
+                    <div class="screenshot-caption">OneDrive配置</div>
                 </div>
             </div>
             <div class="intro-screenshots-grid2">
