@@ -1,15 +1,19 @@
 import '../../../../core/encryption/config_encryptor.dart';
 
 import 'webdav_config.dart';
-import 'webdav_profile.dart';
+import 'cloud_profile.dart';
 import 'download_path_config.dart';
+import 'cloud_storage_type.dart';
+import 'onedrive_config.dart';
 
 /// Aggregate configuration model for LightSend.
 class ConfigModel {
   final WebdavConfig webdav;
+  final OneDriveConfig oneDrive;
+  final CloudStorageType cloudStorageType;
   final DownloadPathConfig downloadPath;
   final bool sendToMenuEnabled;
-  final List<WebdavProfile> profiles;
+  final List<CloudProfile> profiles;
   final String? activeProfileId;
   final int seedColor;
   final String themeMode;
@@ -19,6 +23,8 @@ class ConfigModel {
 
   const ConfigModel({
     required this.webdav,
+    required this.oneDrive,
+    required this.cloudStorageType,
     required this.downloadPath,
     this.sendToMenuEnabled = false,
     this.profiles = const [],
@@ -29,6 +35,8 @@ class ConfigModel {
 
   factory ConfigModel.defaults() => ConfigModel(
     webdav: WebdavConfig.empty(),
+    oneDrive: OneDriveConfig.empty(),
+    cloudStorageType: CloudStorageType.webdav,
     downloadPath: DownloadPathConfig.defaultPath(''),
     sendToMenuEnabled: false,
     seedColor: defaultSeedColor,
@@ -37,9 +45,11 @@ class ConfigModel {
 
   ConfigModel copyWith({
     WebdavConfig? webdav,
+    OneDriveConfig? oneDrive,
+    CloudStorageType? cloudStorageType,
     DownloadPathConfig? downloadPath,
     bool? sendToMenuEnabled,
-    List<WebdavProfile>? profiles,
+    List<CloudProfile>? profiles,
     String? activeProfileId,
     bool clearActiveProfile = false,
     int? seedColor,
@@ -47,6 +57,8 @@ class ConfigModel {
   }) {
     return ConfigModel(
       webdav: webdav ?? this.webdav,
+      oneDrive: oneDrive ?? this.oneDrive,
+      cloudStorageType: cloudStorageType ?? this.cloudStorageType,
       downloadPath: downloadPath ?? this.downloadPath,
       sendToMenuEnabled: sendToMenuEnabled ?? this.sendToMenuEnabled,
       profiles: profiles ?? this.profiles,
@@ -60,6 +72,8 @@ class ConfigModel {
 
   Map<String, dynamic> toJson(ConfigEncryptor encryptor) => {
     'webdav': webdav.toJson(encryptor),
+    'oneDrive': oneDrive.toJson(encryptor),
+    'cloudStorageType': cloudStorageType.storageValue,
     'downloadPath': downloadPath.toJson(),
     'sendToMenuEnabled': sendToMenuEnabled,
     'profiles': profiles.map((p) => p.toJson(encryptor)).toList(),
@@ -79,6 +93,15 @@ class ConfigModel {
               encryptor,
             )
           : WebdavConfig.empty(),
+      oneDrive: json['oneDrive'] != null
+          ? OneDriveConfig.fromJson(
+              json['oneDrive'] as Map<String, dynamic>,
+              encryptor,
+            )
+          : OneDriveConfig.empty(),
+      cloudStorageType: CloudStorageType.fromStorageValue(
+        json['cloudStorageType'] as String?,
+      ),
       downloadPath: json['downloadPath'] != null
           ? DownloadPathConfig.fromJson(
               json['downloadPath'] as Map<String, dynamic>,
@@ -88,10 +111,8 @@ class ConfigModel {
       profiles:
           (json['profiles'] as List<dynamic>?)
               ?.map(
-                (e) => WebdavProfile.fromJson(
-                  e as Map<String, dynamic>,
-                  encryptor,
-                ),
+                (e) =>
+                    CloudProfile.fromJson(e as Map<String, dynamic>, encryptor),
               )
               .toList() ??
           [],

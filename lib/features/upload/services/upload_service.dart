@@ -4,20 +4,18 @@ import 'dart:io' as io;
 import 'package:dio/dio.dart';
 import 'package:webdav_client/webdav_client.dart' as wc;
 
-import '../../config/data/models/webdav_config.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/remote_file_name_helper.dart';
+import '../../config/data/models/webdav_config.dart';
 
-/// Upload progress callback.
 typedef UploadProgressCallback = void Function(int count, int total);
 
-/// Result returned after a successful upload.
 class UploadResult {
   final String remoteFileName;
 
   const UploadResult({required this.remoteFileName});
 }
 
-/// Service for uploading files or text to WebDAV shared directory.
 class UploadService {
   wc.Client _createClient(WebdavConfig config, {int? transferSizeBytes}) {
     final client = wc.newClient(
@@ -35,8 +33,6 @@ class UploadService {
     return client;
   }
 
-  /// Uploads a local file to the WebDAV server under the shared directory.
-  /// Returns the final remote file name.
   Future<UploadResult> upload({
     required String localPath,
     required String remoteFileName,
@@ -50,37 +46,26 @@ class UploadService {
     }
 
     final fileSize = await localFile.length();
-
     final client = _createClient(config, transferSizeBytes: fileSize);
-
     await client.mkdirAll(AppConstants.remoteTransferDir);
 
-    // Check for duplicate filename on server
-    String finalName = remoteFileName;
-    try {
-      // Try to read props — if it succeeds, file exists, add timestamp
-      await client.readProps(
-        '${AppConstants.remoteTransferDir}/$remoteFileName',
-      );
-      final dot = remoteFileName.lastIndexOf('.');
-      final name = dot > 0 ? remoteFileName.substring(0, dot) : remoteFileName;
-      final ext = dot > 0 ? remoteFileName.substring(dot) : '';
-      final ts = DateTime.now().millisecondsSinceEpoch;
-      finalName = '${name}_$ts$ext';
-    } catch (_) {
-      // File doesn't exist — use original name
-    }
-
-    final remotePath = '${AppConstants.remoteTransferDir}/$finalName';
+    final finalDisplayName = await _resolveDisplayName(
+      client,
+      remoteFileName,
+      RemoteFileNameHelper.remoteFileNameForUpload,
+    );
+    final finalRemoteName = RemoteFileNameHelper.remoteFileNameForUpload(
+      finalDisplayName,
+    );
+    final remotePath = '${AppConstants.remoteTransferDir}/$finalRemoteName';
     final uploadPath = _temporaryUploadPath(remotePath);
-    final totalSize = fileSize;
 
     try {
       await client.writeFromFile(
         localPath,
         uploadPath,
         onProgress: (count, _) {
-          onProgress?.call(count, totalSize);
+          onProgress?.call(count, fileSize);
         },
         cancelToken: cancelToken,
       );
@@ -100,11 +85,9 @@ class UploadService {
       rethrow;
     }
 
-    return UploadResult(remoteFileName: finalName);
+    return UploadResult(remoteFileName: finalDisplayName);
   }
 
-  /// Uploads text content to the WebDAV server under the shared directory.
-  /// Returns the final remote file name.
   Future<UploadResult> uploadText({
     required String textContent,
     required String remoteFileName,
@@ -114,36 +97,24 @@ class UploadService {
   }) async {
     final bytes = utf8.encode(textContent);
     final fileSize = bytes.length;
-
     final client = _createClient(config, transferSizeBytes: fileSize);
-
     await client.mkdirAll(AppConstants.remoteTransferDir);
 
-    // Check for duplicate filename on server
-    String finalName = remoteFileName;
-    try {
-      // Try to read props — if it succeeds, file exists, add timestamp
-      await client.readProps(
-        '${AppConstants.remoteTransferDir}/$remoteFileName',
-      );
-      final dot = remoteFileName.lastIndexOf('.');
-      final name = dot > 0 ? remoteFileName.substring(0, dot) : remoteFileName;
-      final ext = dot > 0 ? remoteFileName.substring(dot) : '';
-      final ts = DateTime.now().millisecondsSinceEpoch;
-      finalName = '${name}_$ts$ext';
-    } catch (_) {
-      // File doesn't exist — use original name
-    }
-
-    final remotePath = '${AppConstants.remoteTransferDir}/$finalName';
+    final finalDisplayName = await _resolveDisplayName(
+      client,
+      remoteFileName,
+      RemoteFileNameHelper.remoteTextFileNameForUpload,
+    );
+    final finalRemoteName = RemoteFileNameHelper.remoteTextFileNameForUpload(
+      finalDisplayName,
+    );
+    final remotePath = '${AppConstants.remoteTransferDir}/$finalRemoteName';
     final uploadPath = _temporaryUploadPath(remotePath);
-    final totalSize = fileSize;
 
-    // Simulate progress steps for text upload
     const steps = 10;
-    for (int i = 1; i <= steps; i++) {
+    for (var i = 1; i <= steps; i++) {
       await Future.delayed(const Duration(milliseconds: 50));
-      onProgress?.call((totalSize * i / steps).round(), totalSize);
+      onProgress?.call((fileSize * i / steps).round(), fileSize);
     }
 
     try {
@@ -164,7 +135,22 @@ class UploadService {
       rethrow;
     }
 
-    return UploadResult(remoteFileName: finalName);
+    return UploadResult(remoteFileName: finalDisplayName);
+  }
+
+  Future<String> _resolveDisplayName(
+    wc.Client client,
+    String displayName,
+    String Function(String displayName) toRemoteName,
+  ) async {
+    final remoteName = toRemoteName(displayName);
+    try {
+      await client.readProps('${AppConstants.remoteTransferDir}/$remoteName');
+      final duplicate = RemoteFileNameHelper.duplicateDisplayName(displayName);
+      return duplicate;
+    } catch (_) {
+      return displayName;
+    }
   }
 
   String _temporaryUploadPath(String remotePath) {
@@ -196,7 +182,7 @@ class UploadService {
   }
 
   Future<int> getTotalSize(List<String> paths) async {
-    int total = 0;
+    var total = 0;
     for (final path in paths) {
       final file = io.File(path);
       if (await file.exists()) {

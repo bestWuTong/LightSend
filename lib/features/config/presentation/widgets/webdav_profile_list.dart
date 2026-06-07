@@ -1,34 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/constants/ui_constants.dart';
-import '../../data/models/webdav_profile.dart';
+import '../../data/models/cloud_profile.dart';
+import '../../data/models/cloud_storage_type.dart';
 import '../providers/config_providers.dart';
 import 'config_dialogs.dart';
+import 'onedrive_config_dialog.dart';
 import 'section_card.dart';
 import 'webdav_config_dialog.dart';
 
-/// Displays the WebDAV profile list with create / switch / edit / delete actions.
 class WebdavProfileList extends ConsumerWidget {
   const WebdavProfileList({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final configAsync = ref.watch(configProvider);
-    final config = configAsync.valueOrNull;
+    final config = ref.watch(configProvider).valueOrNull;
     if (config == null) return const SizedBox.shrink();
 
     final profiles = config.profiles;
 
     return SectionCard(
-      title: 'WebDAV配置列表',
+      title: '云端配置列表',
       icon: Icons.cloud_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           FilledButton.tonalIcon(
-            onPressed: () => _openEditor(context),
+            onPressed: () => _createProfile(context),
             icon: const Icon(Icons.add, size: 18),
             label: const Text('新建配置'),
           ),
@@ -59,8 +59,7 @@ class WebdavProfileList extends ConsumerWidget {
           ),
           if (profiles.isNotEmpty) ...[
             const Divider(height: UiConstants.spacingLg),
-            ...List.generate(profiles.length, (index) {
-              final profile = profiles[index];
+            ...profiles.map((profile) {
               final isActive = profile.id == config.activeProfileId;
               return _ProfileTile(profile: profile, isActive: isActive);
             }),
@@ -70,10 +69,53 @@ class WebdavProfileList extends ConsumerWidget {
     );
   }
 
-  void _openEditor(BuildContext context, {WebdavProfile? profile}) {
+  Future<void> _createProfile(BuildContext context) async {
+    final type = await showDialog<CloudStorageType>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('选择云服务'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.of(ctx).pop(CloudStorageType.oneDrive),
+            child: const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.cloud_sync_outlined),
+              title: Text('OneDrive'),
+              subtitle: Text('使用个人 OneDrive 的应用专属目录'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.of(ctx).pop(CloudStorageType.webdav),
+            child: const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.cloud_outlined),
+              title: Text('WebDAV'),
+              subtitle: Text('使用 WebDAV 地址、账号和应用密码'),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (type == null || !context.mounted) return;
+    _openEditor(context, type: type);
+  }
+
+  void _openEditor(
+    BuildContext context, {
+    required CloudStorageType type,
+    CloudProfile? profile,
+  }) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => WebdavConfigDialog(existingProfile: profile),
+        builder: (_) {
+          switch (type) {
+            case CloudStorageType.oneDrive:
+              return OneDriveConfigDialog(existingProfile: profile);
+            case CloudStorageType.webdav:
+              return WebdavConfigDialog(existingProfile: profile);
+          }
+        },
       ),
     );
   }
@@ -81,17 +123,17 @@ class WebdavProfileList extends ConsumerWidget {
   Future<void> _exportProfiles(
     BuildContext context,
     WidgetRef ref,
-    List<WebdavProfile> profiles,
+    List<CloudProfile> profiles,
   ) async {
     final selectedIds = await showDialog<List<String>>(
       context: context,
-      builder: (ctx) => _WebdavProfileExportDialog(profiles: profiles),
+      builder: (ctx) => _CloudProfileExportDialog(profiles: profiles),
     );
     if (selectedIds == null || selectedIds.isEmpty) return;
 
     final exported = ref
         .read(configProvider.notifier)
-        .exportWebdavProfiles(selectedIds);
+        .exportProfiles(selectedIds);
     if (exported == null) {
       if (context.mounted) {
         ScaffoldMessenger.of(
@@ -112,14 +154,12 @@ class WebdavProfileList extends ConsumerWidget {
   Future<void> _importProfiles(BuildContext context, WidgetRef ref) async {
     final rawConfig = await showDialog<String>(
       context: context,
-      builder: (ctx) => const _WebdavProfileImportDialog(),
+      builder: (ctx) => const _CloudProfileImportDialog(),
     );
     if (rawConfig == null || rawConfig.trim().isEmpty) return;
 
     try {
-      await ref
-          .read(configProvider.notifier)
-          .importWebdavProfiles(rawConfig.trim());
+      await ref.read(configProvider.notifier).importProfiles(rawConfig.trim());
     } catch (_) {
       if (context.mounted) {
         await ConfigDialogs.showError(context, '导入失败', '配置内容无效，请检查后重新导入。');
@@ -128,18 +168,17 @@ class WebdavProfileList extends ConsumerWidget {
   }
 }
 
-class _WebdavProfileExportDialog extends StatefulWidget {
-  final List<WebdavProfile> profiles;
+class _CloudProfileExportDialog extends StatefulWidget {
+  final List<CloudProfile> profiles;
 
-  const _WebdavProfileExportDialog({required this.profiles});
+  const _CloudProfileExportDialog({required this.profiles});
 
   @override
-  State<_WebdavProfileExportDialog> createState() =>
-      _WebdavProfileExportDialogState();
+  State<_CloudProfileExportDialog> createState() =>
+      _CloudProfileExportDialogState();
 }
 
-class _WebdavProfileExportDialogState
-    extends State<_WebdavProfileExportDialog> {
+class _CloudProfileExportDialogState extends State<_CloudProfileExportDialog> {
   late final Set<String> _selectedIds;
 
   @override
@@ -151,7 +190,7 @@ class _WebdavProfileExportDialogState
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('导出WebDAV配置'),
+      title: const Text('导出云端配置'),
       content: SizedBox(
         width: double.maxFinite,
         child: ListView.builder(
@@ -164,7 +203,7 @@ class _WebdavProfileExportDialogState
               value: _selectedIds.contains(profile.id),
               title: Text(profile.name),
               subtitle: Text(
-                '${profile.config.account}@${Uri.tryParse(profile.config.url)?.host ?? profile.config.url}',
+                _profileSubtitle(profile),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -197,16 +236,15 @@ class _WebdavProfileExportDialogState
   }
 }
 
-class _WebdavProfileImportDialog extends StatefulWidget {
-  const _WebdavProfileImportDialog();
+class _CloudProfileImportDialog extends StatefulWidget {
+  const _CloudProfileImportDialog();
 
   @override
-  State<_WebdavProfileImportDialog> createState() =>
-      _WebdavProfileImportDialogState();
+  State<_CloudProfileImportDialog> createState() =>
+      _CloudProfileImportDialogState();
 }
 
-class _WebdavProfileImportDialogState
-    extends State<_WebdavProfileImportDialog> {
+class _CloudProfileImportDialogState extends State<_CloudProfileImportDialog> {
   final TextEditingController _controller = TextEditingController();
 
   @override
@@ -218,7 +256,7 @@ class _WebdavProfileImportDialogState
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('导入WebDAV配置'),
+      title: const Text('导入云端配置'),
       content: SizedBox(
         width: double.maxFinite,
         child: TextField(
@@ -247,7 +285,7 @@ class _WebdavProfileImportDialogState
 }
 
 class _ProfileTile extends ConsumerWidget {
-  final WebdavProfile profile;
+  final CloudProfile profile;
   final bool isActive;
 
   const _ProfileTile({required this.profile, required this.isActive});
@@ -259,7 +297,7 @@ class _ProfileTile extends ConsumerWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(
-        isActive ? Icons.cloud : Icons.cloud_outlined,
+        _profileIcon(profile, selected: isActive),
         color: isActive ? theme.colorScheme.primary : null,
       ),
       title: Text(
@@ -269,7 +307,7 @@ class _ProfileTile extends ConsumerWidget {
         ),
       ),
       subtitle: Text(
-        '${profile.config.account}@${Uri.tryParse(profile.config.url)?.host ?? profile.config.url}',
+        _profileSubtitle(profile),
         style: theme.textTheme.bodySmall,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
@@ -281,7 +319,7 @@ class _ProfileTile extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.check_circle_outline, size: 20),
               tooltip: '切换到此配置',
-              onPressed: () => _activate(context, ref),
+              onPressed: () => _activate(ref),
             )
           else
             Tooltip(
@@ -308,11 +346,11 @@ class _ProfileTile extends ConsumerWidget {
           ),
         ],
       ),
-      onTap: () => _activate(context, ref),
+      onTap: () => _activate(ref),
     );
   }
 
-  Future<void> _activate(BuildContext context, WidgetRef ref) async {
+  Future<void> _activate(WidgetRef ref) async {
     if (isActive) return;
     await ref.read(configProvider.notifier).activateProfile(profile.id);
   }
@@ -320,7 +358,14 @@ class _ProfileTile extends ConsumerWidget {
   void _edit(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => WebdavConfigDialog(existingProfile: profile),
+        builder: (_) {
+          switch (profile.type) {
+            case CloudStorageType.oneDrive:
+              return OneDriveConfigDialog(existingProfile: profile);
+            case CloudStorageType.webdav:
+              return WebdavConfigDialog(existingProfile: profile);
+          }
+        },
       ),
     );
   }
@@ -329,10 +374,30 @@ class _ProfileTile extends ConsumerWidget {
     final confirmed = await ConfigDialogs.showConfirmation(
       context,
       '删除配置"${profile.name}"',
-      '确定要删除这个WebDAV配置吗？此操作不可撤销。',
+      '确定要删除这个云端配置吗？此操作不可撤销。',
     );
     if (!confirmed) return;
 
     await ref.read(configProvider.notifier).deleteProfile(profile.id);
+  }
+}
+
+IconData _profileIcon(CloudProfile profile, {required bool selected}) {
+  switch (profile.type) {
+    case CloudStorageType.oneDrive:
+      return selected ? Icons.cloud_sync : Icons.cloud_sync_outlined;
+    case CloudStorageType.webdav:
+      return selected ? Icons.cloud : Icons.cloud_outlined;
+  }
+}
+
+String _profileSubtitle(CloudProfile profile) {
+  switch (profile.type) {
+    case CloudStorageType.oneDrive:
+      final account = profile.oneDrive.account;
+      return account.isEmpty ? 'OneDrive' : 'OneDrive · $account';
+    case CloudStorageType.webdav:
+      final host = Uri.tryParse(profile.webdav.url)?.host ?? profile.webdav.url;
+      return '${profile.webdav.account}@$host';
   }
 }

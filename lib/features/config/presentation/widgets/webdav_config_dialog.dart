@@ -5,14 +5,14 @@ import '../../../../../core/constants/ui_constants.dart';
 import '../../../../../core/utils/validators.dart';
 import '../../../../../shared/widgets/status_indicator.dart';
 import '../../data/models/webdav_config.dart';
-import '../../data/models/webdav_profile.dart';
+import '../../data/models/cloud_profile.dart';
 import '../../services/webdav_service.dart';
 import '../providers/config_providers.dart';
 
 /// Full-screen dialog for creating or editing a WebDAV configuration profile.
 class WebdavConfigDialog extends ConsumerStatefulWidget {
   /// If non-null, editing an existing profile.
-  final WebdavProfile? existingProfile;
+  final CloudProfile? existingProfile;
 
   const WebdavConfigDialog({super.key, this.existingProfile});
 
@@ -38,9 +38,9 @@ class _WebdavConfigDialogState extends ConsumerState<WebdavConfigDialog> {
     super.initState();
     final p = widget.existingProfile;
     _nameCtrl = TextEditingController(text: p?.name ?? '');
-    _urlCtrl = TextEditingController(text: p?.config.url ?? '');
-    _accountCtrl = TextEditingController(text: p?.config.account ?? '');
-    _passwordCtrl = TextEditingController(text: p?.config.password ?? '');
+    _urlCtrl = TextEditingController(text: p?.webdav.url ?? '');
+    _accountCtrl = TextEditingController(text: p?.webdav.account ?? '');
+    _passwordCtrl = TextEditingController(text: p?.webdav.password ?? '');
   }
 
   @override
@@ -109,7 +109,9 @@ class _WebdavConfigDialogState extends ConsumerState<WebdavConfigDialog> {
       return;
     }
 
-    final success = await ref.read(configProvider.notifier).saveProfile(
+    final success = await ref
+        .read(configProvider.notifier)
+        .saveWebdavProfile(
           name,
           profileId: widget.existingProfile?.id,
           config: input,
@@ -188,9 +190,11 @@ class _WebdavConfigDialogState extends ConsumerState<WebdavConfigDialog> {
               labelText: '密码（第三方应用密码）',
               prefixIcon: const Icon(Icons.lock_outline),
               suffixIcon: IconButton(
-                icon: Icon(_obscurePassword
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined),
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                ),
                 onPressed: () =>
                     setState(() => _obscurePassword = !_obscurePassword),
               ),
@@ -238,7 +242,7 @@ class _WebdavConfigDialogState extends ConsumerState<WebdavConfigDialog> {
       return const Text('正在测试...', style: TextStyle(fontSize: 13));
     }
     if (_testResult == null) {
-      final saved = widget.existingProfile?.config.lastTestSucceeded;
+      final saved = widget.existingProfile?.webdav.lastTestSucceeded;
       if (saved == true) return StatusIndicator.success('上次连接成功');
       if (saved == false) return StatusIndicator.failure('上次连接失败');
       return const SizedBox.shrink();

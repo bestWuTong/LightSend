@@ -3,11 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/ui_constants.dart';
-import '../../../../features/config/config.dart';
 import '../../data/models/cloud_file.dart';
 import '../providers/download_provider.dart';
 
-/// Dialog for viewing text content
 class TextViewerDialog extends ConsumerStatefulWidget {
   final CloudFile file;
 
@@ -31,15 +29,7 @@ class _TextViewerDialogState extends ConsumerState<TextViewerDialog> {
 
   Future<void> _loadContent() async {
     try {
-      final configAsync = ref.read(configProvider);
-      final config = configAsync.valueOrNull;
-      if (config == null || !config.webdav.isConfigured) {
-        throw Exception('WebDAV 未配置');
-      }
-
-      final service = ref.read(downloadServiceProvider);
-      final content = await service.readTextContent(config.webdav, widget.file);
-
+      final content = await readCloudTextContent(ref, widget.file);
       if (mounted) {
         setState(() {
           _content = content;
@@ -67,15 +57,15 @@ class _TextViewerDialogState extends ConsumerState<TextViewerDialog> {
       await Clipboard.setData(ClipboardData(text: _content!));
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('已复制到剪贴板')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('已复制到剪贴板')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('复制失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('复制失败: $e')));
       }
     } finally {
       if (mounted) {
@@ -91,59 +81,49 @@ class _TextViewerDialogState extends ConsumerState<TextViewerDialog> {
     final theme = Theme.of(context);
 
     return AlertDialog(
-      title: Text(
-        '查看文本',
-        style: theme.textTheme.titleLarge,
-      ),
+      title: Text('查看文本', style: theme.textTheme.titleLarge),
       content: SizedBox(
         width: double.maxFinite,
         height: 400,
         child: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(),
-              )
+            ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: theme.colorScheme.error,
-                        ),
-                        const SizedBox(height: UiConstants.spacingMd),
-                        Text(
-                          '加载失败',
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: UiConstants.spacingSm),
-                        Text(
-                          _error!,
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: theme.colorScheme.error,
                     ),
-                  )
-                : Container(
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(UiConstants.spacingMd),
-                      primary: true,
-                      child: SelectableText(
-                        _content ?? '',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          height: 1.4,
-                        ),
+                    const SizedBox(height: UiConstants.spacingMd),
+                    Text('加载失败', style: theme.textTheme.titleMedium),
+                    const SizedBox(height: UiConstants.spacingSm),
+                    Text(
+                      _error!,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
+                  ],
+                ),
+              )
+            : Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(UiConstants.spacingMd),
+                  primary: true,
+                  child: SelectableText(
+                    _content ?? '',
+                    style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
                   ),
+                ),
+              ),
       ),
       actions: [
         TextButton.icon(
@@ -169,7 +149,6 @@ class _TextViewerDialogState extends ConsumerState<TextViewerDialog> {
   }
 }
 
-/// Shows the text viewer dialog
 Future<void> showTextViewer(BuildContext context, CloudFile file) {
   return showDialog(
     context: context,

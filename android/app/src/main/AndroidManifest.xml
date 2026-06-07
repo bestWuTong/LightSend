@@ -50,6 +50,22 @@
                 <data android:mimeType="*/*"/>
             </intent-filter>
         </activity>
+        <activity
+            android:name=".OneDriveAuthRedirectActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:noHistory="true"
+            android:theme="@style/LaunchTheme">
+            <!-- Microsoft OneDrive OAuth redirect -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="msauth"
+                    android:host="com.lightsend.lightsend"/>
+            </intent-filter>
+        </activity>
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

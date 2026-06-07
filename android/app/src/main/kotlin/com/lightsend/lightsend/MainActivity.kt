@@ -16,11 +16,14 @@ class MainActivity : FlutterActivity() {
     private val STORAGE_PERMISSION_CHANNEL = "lightsend/storage_permission"
     private val SHARE_CHANNEL = "lightsend/share"
     private val FILE_CHANNEL = "lightsend/file"
+    private val ONEDRIVE_AUTH_CHANNEL = "lightsend/onedrive_auth"
 
     private val pendingSharePaths = mutableListOf<String>()
     private val pendingShareTexts = mutableListOf<String>()
     private var shareChannel: MethodChannel? = null
+    private var oneDriveAuthChannel: MethodChannel? = null
     private var dartShareHandlerReady = false
+    private var pendingAuthRedirect: String? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -72,16 +75,51 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        oneDriveAuthChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            ONEDRIVE_AUTH_CHANNEL
+        )
+        oneDriveAuthChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "consumePendingAuthRedirect" -> {
+                    val redirect = pendingAuthRedirect ?: OneDriveAuthBridge.consumePendingRedirect(this)
+                    pendingAuthRedirect = null
+                    result.success(redirect)
+                }
+                "clearPendingAuthRedirect" -> {
+                    pendingAuthRedirect = null
+                    OneDriveAuthBridge.clearPendingRedirect(this)
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        handleAuthRedirect(intent)
         handleShareIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
+        handleAuthRedirect(intent)
         handleShareIntent(intent)
+    }
+
+    private fun handleAuthRedirect(intent: Intent?) {
+        val redirect = intent?.getStringExtra(OneDriveAuthBridge.EXTRA_REDIRECT)
+            ?: intent?.data?.takeIf { data ->
+                data.scheme == "msauth" && data.host == packageName
+            }?.toString()
+            ?: OneDriveAuthBridge.consumePendingRedirect(this)
+            ?: return
+
+        pendingAuthRedirect = redirect
+        oneDriveAuthChannel?.invokeMethod("onAuthRedirect", redirect)
     }
 
     private fun handleShareIntent(intent: Intent?) {

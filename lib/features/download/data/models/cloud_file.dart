@@ -1,23 +1,22 @@
-import '../../../../core/constants/app_constants.dart';
-
-/// Represents a file discovered on the WebDAV shared directory.
+/// Represents a file discovered on the active cloud backend.
 class CloudFile {
+  /// Display/local filename. Managed remote suffixes are stripped before this
+  /// value is stored.
   final String name;
   final int size;
   final String remotePath;
   final DateTime uploadTime;
+  final bool isTextMessage;
 
   const CloudFile({
     required this.name,
     required this.size,
     required this.remotePath,
     required this.uploadTime,
+    this.isTextMessage = false,
   });
 
-  bool get isTextFile {
-    return name.startsWith(AppConstants.textFilePrefix) && 
-           name.endsWith(AppConstants.textFileSuffix);
-  }
+  bool get isTextFile => isTextMessage;
 
   String get sizeFormatted {
     if (size < 1024) return '$size B';

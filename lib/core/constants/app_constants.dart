@@ -39,8 +39,30 @@ class AppConstants {
   // WebDAV transfer directory on the remote server
   static const String remoteTransferDir = 'LightSend';
 
+  // OneDrive / Microsoft Graph
+  static const String oneDriveClientId = 'e2444c03-0177-40c1-87f6-b6c81e273c8f';
+  static const String oneDriveAuthority =
+      'https://login.microsoftonline.com/consumers';
+  static const String oneDriveAuthorizeEndpoint =
+      '$oneDriveAuthority/oauth2/v2.0/authorize';
+  static const String oneDriveTokenEndpoint =
+      '$oneDriveAuthority/oauth2/v2.0/token';
+  static const String oneDriveDesktopRedirectPath = '/lightsend-auth';
+  static const String oneDriveAndroidRedirectUri =
+      'msauth://com.lightsend.lightsend/u%2BjHhyEID6Mm%2FyxPeEdnXeU2T3c%3D';
+  static const String oneDriveGraphBaseUrl = 'https://graph.microsoft.com/v1.0';
+  static const List<String> oneDriveScopes = [
+    'User.Read',
+    'offline_access',
+    'Files.ReadWrite.AppFolder',
+  ];
+  static const int oneDriveAuthTimeoutSeconds = 300;
+  static const int oneDriveChunkSizeBytes = 5 * 1024 * 1024;
+
   // Text file constants
-  static const String textFileSuffix = '.lightsend.txt';
+  static const String remoteFileSuffix = '.lightsendfile';
+  static const String remoteTextSuffix = '.lightsendtxt';
+  static const String textFileSuffix = '.txt';
   static const String textFilePrefix = 'text_';
   static const int textPreviewMaxLength = 100;
 

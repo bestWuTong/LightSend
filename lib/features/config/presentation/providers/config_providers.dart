@@ -8,15 +8,17 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/encryption/config_encryptor.dart';
 import '../../../../core/storage/local_storage.dart';
 import '../../../../core/utils/path_utils.dart';
+import '../../../onedrive/services/onedrive_auth_service.dart';
+import '../../../onedrive/services/onedrive_file_service.dart';
 import '../../../upload/services/sendto_service.dart';
+import '../../data/models/cloud_profile.dart';
+import '../../data/models/cloud_storage_type.dart';
 import '../../data/models/config_model.dart';
 import '../../data/models/download_path_config.dart';
+import '../../data/models/onedrive_config.dart';
 import '../../data/models/webdav_config.dart';
-import '../../data/models/webdav_profile.dart';
 import '../../data/repositories/config_repository.dart';
 import '../../services/webdav_service.dart';
-
-// ─── Core infrastructure providers ───────────────────────────────────────────
 
 final localStorageProvider = Provider<LocalStorage>((ref) {
   throw UnimplementedError(
@@ -37,9 +39,15 @@ final configRepositoryProvider = Provider<ConfigRepository>((ref) {
 
 final webdavServiceProvider = Provider<WebdavService>((ref) => WebdavService());
 
-final sendtoServiceProvider = Provider<SendtoService>((ref) => SendtoService());
+final oneDriveAuthServiceProvider = Provider<OneDriveAuthService>(
+  (ref) => OneDriveAuthService(),
+);
 
-// ─── Public config state ─────────────────────────────────────────────────────
+final oneDriveFileServiceProvider = Provider<OneDriveFileService>(
+  (ref) => OneDriveFileService(ref.watch(oneDriveAuthServiceProvider)),
+);
+
+final sendtoServiceProvider = Provider<SendtoService>((ref) => SendtoService());
 
 final configProvider =
     StateNotifierProvider<ConfigNotifier, AsyncValue<ConfigModel>>((ref) {
@@ -47,7 +55,9 @@ final configProvider =
     });
 
 class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
-  static const String _webdavProfilesExportType = 'lightsend.webdav_profiles';
+  static const String _profilesExportType = 'lightsend.cloud_profiles';
+  static const String _legacyWebdavProfilesExportType =
+      'lightsend.webdav_profiles';
 
   final Ref _ref;
 
@@ -75,13 +85,50 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
     }
   }
 
-  // ─── Mutation methods ────────────────────────────────────────────────────
-
   Future<void> updateWebdavConfig(WebdavConfig webdav) async {
     final current = state.valueOrNull;
     if (current == null) return;
 
-    final updated = current.copyWith(webdav: webdav);
+    final updated = current.copyWith(
+      webdav: webdav,
+      cloudStorageType: CloudStorageType.webdav,
+    );
+    state = AsyncValue.data(updated);
+    await _ref.read(configRepositoryProvider).saveConfig(updated);
+  }
+
+  Future<void> updateOneDriveConfig(OneDriveConfig oneDrive) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    final updated = current.copyWith(
+      oneDrive: oneDrive,
+      profiles: _updatedActiveOneDriveProfile(current, oneDrive),
+    );
+    state = AsyncValue.data(updated);
+    await _ref.read(configRepositoryProvider).saveConfig(updated);
+  }
+
+  Future<void> setCloudStorageType(CloudStorageType type) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    final updated = current.copyWith(cloudStorageType: type);
+    state = AsyncValue.data(updated);
+    await _ref.read(configRepositoryProvider).saveConfig(updated);
+  }
+
+  Future<void> disconnectOneDrive() async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    final fallbackType = current.cloudStorageType == CloudStorageType.oneDrive
+        ? CloudStorageType.webdav
+        : current.cloudStorageType;
+    final updated = current.copyWith(
+      oneDrive: OneDriveConfig.empty(),
+      cloudStorageType: fallbackType,
+    );
     state = AsyncValue.data(updated);
     await _ref.read(configRepositoryProvider).saveConfig(updated);
   }
@@ -107,9 +154,6 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
   }
 
   Future<void> resetDownloadPath() async {
-    final current = state.valueOrNull;
-    if (current == null) return;
-
     try {
       final defaultPath = await PathUtils.getDefaultDownloadPath();
       await updateDownloadPath(defaultPath, isDefault: true);
@@ -134,12 +178,7 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
     return success;
   }
 
-  // ─── Profile management ──────────────────────────────────────────────────
-
-  /// Saves a WebDAV config as a named profile.
-  /// If [profileId] is provided, updates an existing profile instead of creating.
-  /// [config] overrides the current active config (used when editing via dialog).
-  Future<bool> saveProfile(
+  Future<bool> saveWebdavProfile(
     String name, {
     String? profileId,
     WebdavConfig? config,
@@ -147,19 +186,22 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
     final current = state.valueOrNull;
     if (current == null) return false;
 
-    final profiles = List<WebdavProfile>.from(current.profiles);
+    final profiles = List<CloudProfile>.from(current.profiles);
     final id = profileId ?? const Uuid().v4();
     final cfg = config ?? current.webdav;
 
     if (profileId != null) {
-      // Update existing profile
       final idx = profiles.indexWhere((p) => p.id == profileId);
       if (idx < 0) return false;
-      profiles[idx] = profiles[idx].copyWith(name: name, config: cfg);
+      profiles[idx] = CloudProfile.webdav(
+        id: profiles[idx].id,
+        name: name,
+        config: cfg,
+        createdAt: profiles[idx].createdAt,
+      );
     } else {
-      // Create new profile
       profiles.add(
-        WebdavProfile(
+        CloudProfile.webdav(
           id: id,
           name: name,
           config: cfg,
@@ -174,10 +216,68 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
       profiles: profiles,
       activeProfileId: isNewProfile ? id : current.activeProfileId,
       webdav: (isNewProfile || isActiveProfile) ? cfg : current.webdav,
+      cloudStorageType: (isNewProfile || isActiveProfile)
+          ? CloudStorageType.webdav
+          : current.cloudStorageType,
     );
     state = AsyncValue.data(updated);
     await _ref.read(configRepositoryProvider).saveConfig(updated);
     return true;
+  }
+
+  Future<bool> saveOneDriveProfile(
+    String name, {
+    String? profileId,
+    OneDriveConfig? config,
+  }) async {
+    final current = state.valueOrNull;
+    if (current == null) return false;
+
+    final profiles = List<CloudProfile>.from(current.profiles);
+    final id = profileId ?? const Uuid().v4();
+    final cfg = config ?? current.oneDrive;
+
+    if (profileId != null) {
+      final idx = profiles.indexWhere((p) => p.id == profileId);
+      if (idx < 0) return false;
+      profiles[idx] = CloudProfile.oneDrive(
+        id: profiles[idx].id,
+        name: name,
+        config: cfg,
+        createdAt: profiles[idx].createdAt,
+      );
+    } else {
+      profiles.add(
+        CloudProfile.oneDrive(
+          id: id,
+          name: name,
+          config: cfg,
+          createdAt: DateTime.now(),
+        ),
+      );
+    }
+
+    final isNewProfile = profileId == null;
+    final isActiveProfile = current.activeProfileId == profileId;
+    final updated = current.copyWith(
+      profiles: profiles,
+      activeProfileId: isNewProfile ? id : current.activeProfileId,
+      oneDrive: (isNewProfile || isActiveProfile) ? cfg : current.oneDrive,
+      cloudStorageType: (isNewProfile || isActiveProfile)
+          ? CloudStorageType.oneDrive
+          : current.cloudStorageType,
+    );
+    state = AsyncValue.data(updated);
+    await _ref.read(configRepositoryProvider).saveConfig(updated);
+    return true;
+  }
+
+  Future<bool> saveProfile(
+    String name, {
+    String? profileId,
+    WebdavConfig? config,
+  }) {
+    return saveWebdavProfile(name, profileId: profileId, config: config);
   }
 
   Future<bool> deleteProfile(String id) async {
@@ -189,6 +289,10 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
     final updated = current.copyWith(
       profiles: profiles,
       webdav: isActiveProfile ? WebdavConfig.empty() : current.webdav,
+      oneDrive: isActiveProfile ? OneDriveConfig.empty() : current.oneDrive,
+      cloudStorageType: isActiveProfile
+          ? CloudStorageType.webdav
+          : current.cloudStorageType,
       clearActiveProfile: isActiveProfile,
     );
     state = AsyncValue.data(updated);
@@ -196,7 +300,7 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
     return true;
   }
 
-  String? exportWebdavProfiles(List<String> profileIds) {
+  String? exportProfiles(List<String> profileIds) {
     final current = state.valueOrNull;
     if (current == null || profileIds.isEmpty) return null;
 
@@ -208,72 +312,82 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
 
     final encryptor = _ref.read(configEncryptorProvider);
     return const JsonEncoder.withIndent('  ').convert({
-      'type': _webdavProfilesExportType,
-      'version': 1,
+      'type': _profilesExportType,
+      'version': 2,
       'exportedAt': DateTime.now().toIso8601String(),
       'profiles': profiles.map((profile) => profile.toJson(encryptor)).toList(),
     });
   }
 
-  Future<int> importWebdavProfiles(String rawConfig) async {
+  String? exportWebdavProfiles(List<String> profileIds) {
+    return exportProfiles(profileIds);
+  }
+
+  Future<int> importProfiles(String rawConfig) async {
     final current = state.valueOrNull;
     if (current == null) return 0;
 
     final decoded = jsonDecode(rawConfig);
     final List<dynamic> rawProfiles;
     if (decoded is Map<String, dynamic>) {
-      if (decoded['type'] != _webdavProfilesExportType) {
-        throw const FormatException('Unsupported WebDAV config export format');
+      final type = decoded['type'];
+      if (type != _profilesExportType &&
+          type != _legacyWebdavProfilesExportType) {
+        throw const FormatException('Unsupported cloud config export format');
       }
       rawProfiles = decoded['profiles'] as List<dynamic>? ?? const [];
     } else if (decoded is List<dynamic>) {
       rawProfiles = decoded;
     } else {
-      throw const FormatException('Invalid WebDAV config export format');
+      throw const FormatException('Invalid cloud config export format');
     }
 
     if (rawProfiles.isEmpty) {
-      throw const FormatException('No WebDAV profiles found');
+      throw const FormatException('No cloud profiles found');
     }
 
     final encryptor = _ref.read(configEncryptorProvider);
     final uuid = const Uuid();
-    final importedProfiles = <WebdavProfile>[];
+    final importedProfiles = <CloudProfile>[];
 
     for (final rawProfile in rawProfiles) {
       if (rawProfile is! Map<String, dynamic>) {
-        throw const FormatException('Invalid WebDAV profile entry');
+        throw const FormatException('Invalid cloud profile entry');
       }
 
-      final profile = WebdavProfile.fromJson(rawProfile, encryptor);
-      if (!profile.config.isConfigured) {
-        throw const FormatException('Invalid WebDAV profile config');
+      final profile = CloudProfile.fromJson(rawProfile, encryptor);
+      if (!profile.isConfigured) {
+        throw const FormatException('Invalid cloud profile config');
       }
 
-      importedProfiles.add(
-        WebdavProfile(
-          id: uuid.v4(),
-          name: profile.name,
-          config: profile.config.copyWith(clearLastTest: true),
-          createdAt: DateTime.now(),
-        ),
-      );
+      importedProfiles.add(_copyImportedProfile(profile, uuid.v4()));
     }
 
     final shouldActivateFirst =
-        current.activeProfileId == null && !current.webdav.isConfigured;
+        current.activeProfileId == null &&
+        !current.webdav.isConfigured &&
+        !current.oneDrive.isConnected;
+    final first = importedProfiles.first;
     final updated = current.copyWith(
       profiles: [...current.profiles, ...importedProfiles],
-      activeProfileId: shouldActivateFirst
-          ? importedProfiles.first.id
-          : current.activeProfileId,
-      webdav: shouldActivateFirst
-          ? importedProfiles.first.config
+      activeProfileId: shouldActivateFirst ? first.id : current.activeProfileId,
+      webdav: shouldActivateFirst && first.type == CloudStorageType.webdav
+          ? first.webdav
           : current.webdav,
+      oneDrive: shouldActivateFirst && first.type == CloudStorageType.oneDrive
+          ? first.oneDrive
+          : current.oneDrive,
+      cloudStorageType: shouldActivateFirst
+          ? first.type
+          : current.cloudStorageType,
     );
     state = AsyncValue.data(updated);
     await _ref.read(configRepositoryProvider).saveConfig(updated);
     return importedProfiles.length;
+  }
+
+  Future<int> importWebdavProfiles(String rawConfig) {
+    return importProfiles(rawConfig);
   }
 
   Future<bool> renameProfile(String id, String newName) async {
@@ -290,7 +404,6 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
     return true;
   }
 
-  /// Switches to a saved profile, copying its config to the active WebDAV config.
   Future<bool> activateProfile(String id) async {
     final current = state.valueOrNull;
     if (current == null) return false;
@@ -301,15 +414,19 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
     );
 
     final updated = current.copyWith(
-      webdav: profile.config,
+      webdav: profile.type == CloudStorageType.webdav
+          ? profile.webdav
+          : current.webdav,
+      oneDrive: profile.type == CloudStorageType.oneDrive
+          ? profile.oneDrive
+          : current.oneDrive,
       activeProfileId: id,
+      cloudStorageType: profile.type,
     );
     state = AsyncValue.data(updated);
     await _ref.read(configRepositoryProvider).saveConfig(updated);
     return true;
   }
-
-  // ─── Theme ──────────────────────────────────────────────────────────────
 
   Future<void> setSeedColor(int color) async {
     final current = state.valueOrNull;
@@ -332,5 +449,43 @@ class ConfigNotifier extends StateNotifier<AsyncValue<ConfigModel>> {
   Future<void> reload() async {
     state = const AsyncValue.loading();
     await _init();
+  }
+
+  List<CloudProfile> _updatedActiveOneDriveProfile(
+    ConfigModel current,
+    OneDriveConfig oneDrive,
+  ) {
+    final activeProfileId = current.activeProfileId;
+    if (activeProfileId == null ||
+        current.cloudStorageType != CloudStorageType.oneDrive) {
+      return current.profiles;
+    }
+
+    return current.profiles.map((profile) {
+      if (profile.id != activeProfileId ||
+          profile.type != CloudStorageType.oneDrive) {
+        return profile;
+      }
+      return profile.copyWith(oneDrive: oneDrive);
+    }).toList();
+  }
+
+  CloudProfile _copyImportedProfile(CloudProfile profile, String id) {
+    switch (profile.type) {
+      case CloudStorageType.webdav:
+        return CloudProfile.webdav(
+          id: id,
+          name: profile.name,
+          config: profile.webdav.copyWith(clearLastTest: true),
+          createdAt: DateTime.now(),
+        );
+      case CloudStorageType.oneDrive:
+        return CloudProfile.oneDrive(
+          id: id,
+          name: profile.name,
+          config: profile.oneDrive.copyWith(clearLastTest: true),
+          createdAt: DateTime.now(),
+        );
+    }
   }
 }

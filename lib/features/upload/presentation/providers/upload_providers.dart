@@ -90,11 +90,10 @@ class UploadNotifier extends StateNotifier<List<UploadTask>> {
     _isUploading = true;
     final task = state[index];
 
-    await _uploadTask(task, index);
+    await _uploadTask(task);
   }
 
-  Future<void> _uploadTask(UploadTask task, int index) async {
-    // Wait for config to load (may still be loading on cold start via SendTo)
+  Future<void> _uploadTask(UploadTask task) async {
     var config = _ref.read(configProvider).valueOrNull;
     if (config == null) {
       for (var i = 0; i < 30; i++) {
@@ -104,8 +103,8 @@ class UploadNotifier extends StateNotifier<List<UploadTask>> {
       }
     }
 
-    if (config == null || !config.webdav.isConfigured) {
-      _markFailed(task.id, '请先在设置中配置WebDAV连接');
+    if (config == null || !_isActiveStorageConfigured(config)) {
+      _markFailed(task.id, '请先在设置中配置当前云端连接');
       _isUploading = false;
       _startNext();
       return;
@@ -116,28 +115,11 @@ class UploadNotifier extends StateNotifier<List<UploadTask>> {
 
     _updateStatus(task.id, UploadStatus.uploading);
 
-    final service = _ref.read(uploadServiceProvider);
     try {
-      if (task.type == UploadType.file) {
-        await service.upload(
-          localPath: task.filePath!,
-          remoteFileName: task.fileName,
-          config: config.webdav,
-          onProgress: (count, total) {
-            _updateProgress(task.id, count, total);
-          },
-          cancelToken: cancelToken,
-        );
+      if (config.cloudStorageType == CloudStorageType.oneDrive) {
+        await _uploadToOneDrive(task, config, cancelToken);
       } else {
-        await service.uploadText(
-          textContent: task.textContent!,
-          remoteFileName: task.fileName,
-          config: config.webdav,
-          onProgress: (count, total) {
-            _updateProgress(task.id, count, total);
-          },
-          cancelToken: cancelToken,
-        );
+        await _uploadToWebdav(task, config, cancelToken);
       }
 
       if (cancelToken.isCancelled) return;
@@ -149,6 +131,76 @@ class UploadNotifier extends StateNotifier<List<UploadTask>> {
       _currentCancelToken = null;
       _isUploading = false;
       _startNext();
+    }
+  }
+
+  bool _isActiveStorageConfigured(ConfigModel config) {
+    switch (config.cloudStorageType) {
+      case CloudStorageType.oneDrive:
+        return config.oneDrive.isConnected;
+      case CloudStorageType.webdav:
+        return config.webdav.isConfigured;
+    }
+  }
+
+  Future<void> _uploadToWebdav(
+    UploadTask task,
+    ConfigModel config,
+    CancelToken cancelToken,
+  ) async {
+    final service = _ref.read(uploadServiceProvider);
+    if (task.type == UploadType.file) {
+      await service.upload(
+        localPath: task.filePath!,
+        remoteFileName: task.fileName,
+        config: config.webdav,
+        onProgress: (count, total) {
+          _updateProgress(task.id, count, total);
+        },
+        cancelToken: cancelToken,
+      );
+    } else {
+      await service.uploadText(
+        textContent: task.textContent!,
+        remoteFileName: task.fileName,
+        config: config.webdav,
+        onProgress: (count, total) {
+          _updateProgress(task.id, count, total);
+        },
+        cancelToken: cancelToken,
+      );
+    }
+  }
+
+  Future<void> _uploadToOneDrive(
+    UploadTask task,
+    ConfigModel config,
+    CancelToken cancelToken,
+  ) async {
+    final service = _ref.read(oneDriveFileServiceProvider);
+    final notifier = _ref.read(configProvider.notifier);
+    if (task.type == UploadType.file) {
+      await service.upload(
+        localPath: task.filePath!,
+        remoteFileName: task.fileName,
+        config: config.oneDrive,
+        onConfigUpdated: notifier.updateOneDriveConfig,
+        onProgress: (count, total) {
+          _updateProgress(task.id, count, total);
+        },
+        cancelToken: cancelToken,
+      );
+    } else {
+      await service.uploadText(
+        textContent: task.textContent!,
+        remoteFileName: task.fileName,
+        config: config.oneDrive,
+        onConfigUpdated: notifier.updateOneDriveConfig,
+        onProgress: (count, total) {
+          _updateProgress(task.id, count, total);
+        },
+        cancelToken: cancelToken,
+      );
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:webdav_client/webdav_client.dart' as wc;
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/path_utils.dart';
+import '../../../core/utils/remote_file_name_helper.dart';
 import '../../../features/config/config.dart';
 import '../data/models/cloud_file.dart';
 
@@ -43,14 +44,18 @@ class DownloadService {
 
     final files = entries
         .where((e) => !(e.isDir ?? false))
-        .map(
-          (e) => CloudFile(
-            name: e.name ?? '',
+        .map((e) {
+          final remoteName = e.name ?? '';
+          return CloudFile(
+            name: RemoteFileNameHelper.displayName(remoteName),
             size: e.size ?? 0,
-            remotePath: e.path ?? (e.name ?? ''),
+            remotePath: e.path ?? remoteName,
             uploadTime: e.mTime ?? DateTime.now(),
-          ),
-        )
+            isTextMessage: RemoteFileNameHelper.isRemoteTextFileName(
+              remoteName,
+            ),
+          );
+        })
         .where((f) => f.name.isNotEmpty)
         .toList();
 
